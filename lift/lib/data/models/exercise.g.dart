@@ -22,9 +22,9 @@ const ExerciseSchema = CollectionSchema(
       name: r'defaultRestTime',
       type: IsarType.long,
     ),
-    r'isCutom': PropertySchema(
+    r'isCustom': PropertySchema(
       id: 1,
-      name: r'isCutom',
+      name: r'isCustom',
       type: IsarType.bool,
     ),
     r'name': PropertySchema(
@@ -44,14 +44,14 @@ const ExerciseSchema = CollectionSchema(
   deserializeProp: _exerciseDeserializeProp,
   idName: r'id',
   indexes: {
-    r'isCutom': IndexSchema(
-      id: -2267421062392803049,
-      name: r'isCutom',
+    r'isCustom': IndexSchema(
+      id: -2539866887983386444,
+      name: r'isCustom',
       unique: false,
       replace: false,
       properties: [
         IndexPropertySchema(
-          name: r'isCutom',
+          name: r'isCustom',
           type: IndexType.value,
           caseSensitive: false,
         )
@@ -84,7 +84,7 @@ void _exerciseSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeLong(offsets[0], object.defaultRestTime);
-  writer.writeBool(offsets[1], object.isCutom);
+  writer.writeBool(offsets[1], object.isCustom);
   writer.writeString(offsets[2], object.name);
   writer.writeString(offsets[3], object.targetPart);
 }
@@ -98,7 +98,7 @@ Exercise _exerciseDeserialize(
   final object = Exercise();
   object.defaultRestTime = reader.readLong(offsets[0]);
   object.id = id;
-  object.isCutom = reader.readBool(offsets[1]);
+  object.isCustom = reader.readBool(offsets[1]);
   object.name = reader.readString(offsets[2]);
   object.targetPart = reader.readString(offsets[3]);
   return object;
@@ -143,10 +143,10 @@ extension ExerciseQueryWhereSort on QueryBuilder<Exercise, Exercise, QWhere> {
     });
   }
 
-  QueryBuilder<Exercise, Exercise, QAfterWhere> anyIsCutom() {
+  QueryBuilder<Exercise, Exercise, QAfterWhere> anyIsCustom() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
-        const IndexWhereClause.any(indexName: r'isCutom'),
+        const IndexWhereClause.any(indexName: r'isCustom'),
       );
     });
   }
@@ -218,45 +218,45 @@ extension ExerciseQueryWhere on QueryBuilder<Exercise, Exercise, QWhereClause> {
     });
   }
 
-  QueryBuilder<Exercise, Exercise, QAfterWhereClause> isCutomEqualTo(
-      bool isCutom) {
+  QueryBuilder<Exercise, Exercise, QAfterWhereClause> isCustomEqualTo(
+      bool isCustom) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'isCutom',
-        value: [isCutom],
+        indexName: r'isCustom',
+        value: [isCustom],
       ));
     });
   }
 
-  QueryBuilder<Exercise, Exercise, QAfterWhereClause> isCutomNotEqualTo(
-      bool isCutom) {
+  QueryBuilder<Exercise, Exercise, QAfterWhereClause> isCustomNotEqualTo(
+      bool isCustom) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
             .addWhereClause(IndexWhereClause.between(
-              indexName: r'isCutom',
+              indexName: r'isCustom',
               lower: [],
-              upper: [isCutom],
+              upper: [isCustom],
               includeUpper: false,
             ))
             .addWhereClause(IndexWhereClause.between(
-              indexName: r'isCutom',
-              lower: [isCutom],
+              indexName: r'isCustom',
+              lower: [isCustom],
               includeLower: false,
               upper: [],
             ));
       } else {
         return query
             .addWhereClause(IndexWhereClause.between(
-              indexName: r'isCutom',
-              lower: [isCutom],
+              indexName: r'isCustom',
+              lower: [isCustom],
               includeLower: false,
               upper: [],
             ))
             .addWhereClause(IndexWhereClause.between(
-              indexName: r'isCutom',
+              indexName: r'isCustom',
               lower: [],
-              upper: [isCutom],
+              upper: [isCustom],
               includeUpper: false,
             ));
       }
@@ -374,11 +374,11 @@ extension ExerciseQueryFilter
     });
   }
 
-  QueryBuilder<Exercise, Exercise, QAfterFilterCondition> isCutomEqualTo(
+  QueryBuilder<Exercise, Exercise, QAfterFilterCondition> isCustomEqualTo(
       bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'isCutom',
+        property: r'isCustom',
         value: value,
       ));
     });
@@ -665,15 +665,15 @@ extension ExerciseQuerySortBy on QueryBuilder<Exercise, Exercise, QSortBy> {
     });
   }
 
-  QueryBuilder<Exercise, Exercise, QAfterSortBy> sortByIsCutom() {
+  QueryBuilder<Exercise, Exercise, QAfterSortBy> sortByIsCustom() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isCutom', Sort.asc);
+      return query.addSortBy(r'isCustom', Sort.asc);
     });
   }
 
-  QueryBuilder<Exercise, Exercise, QAfterSortBy> sortByIsCutomDesc() {
+  QueryBuilder<Exercise, Exercise, QAfterSortBy> sortByIsCustomDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isCutom', Sort.desc);
+      return query.addSortBy(r'isCustom', Sort.desc);
     });
   }
 
@@ -728,15 +728,15 @@ extension ExerciseQuerySortThenBy
     });
   }
 
-  QueryBuilder<Exercise, Exercise, QAfterSortBy> thenByIsCutom() {
+  QueryBuilder<Exercise, Exercise, QAfterSortBy> thenByIsCustom() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isCutom', Sort.asc);
+      return query.addSortBy(r'isCustom', Sort.asc);
     });
   }
 
-  QueryBuilder<Exercise, Exercise, QAfterSortBy> thenByIsCutomDesc() {
+  QueryBuilder<Exercise, Exercise, QAfterSortBy> thenByIsCustomDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isCutom', Sort.desc);
+      return query.addSortBy(r'isCustom', Sort.desc);
     });
   }
 
@@ -773,9 +773,9 @@ extension ExerciseQueryWhereDistinct
     });
   }
 
-  QueryBuilder<Exercise, Exercise, QDistinct> distinctByIsCutom() {
+  QueryBuilder<Exercise, Exercise, QDistinct> distinctByIsCustom() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'isCutom');
+      return query.addDistinctBy(r'isCustom');
     });
   }
 
@@ -808,9 +808,9 @@ extension ExerciseQueryProperty
     });
   }
 
-  QueryBuilder<Exercise, bool, QQueryOperations> isCutomProperty() {
+  QueryBuilder<Exercise, bool, QQueryOperations> isCustomProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'isCutom');
+      return query.addPropertyName(r'isCustom');
     });
   }
 

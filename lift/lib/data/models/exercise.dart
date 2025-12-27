@@ -15,8 +15,10 @@ class Exercise {
 
   // 索引字段
   @Index()
-  bool isCutom = false; // 是否是自定义动作
+  bool isCustom = false; // 是否是自定义动作
 
   // 默认休息时间，单位秒s
   int defaultRestTime = 90;
+
+  // TODO：关于动作可以有更多字段：比如其类型：器械/徒手，有氧/无氧等
 }

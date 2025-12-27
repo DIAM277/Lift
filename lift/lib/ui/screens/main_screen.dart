@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 
-// 暂时占位符
 import 'home_screen.dart';
+import 'exercise_library_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -17,7 +17,7 @@ class _MainScreenState extends State<MainScreen> {
   // 三个主页面
   final List<Widget> _pages = [
     const HomeScreen(), // 首页
-    const Center(child: Text("动作库(开发中)")), // 动作库
+    const ExerciseLibraryScreen(), // 动作库
     const Center(child: Text("回顾(开发中)")),
   ];
 
