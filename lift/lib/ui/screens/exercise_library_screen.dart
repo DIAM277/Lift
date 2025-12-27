@@ -1,193 +1,129 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/models/exercise.dart';
-import '../../providers/exercise_provider.dart';
+import '../../data/isar_service.dart';
+import '../../data/models/routine.dart';
+import 'package:isar/isar.dart';
+import 'create_routine_screen.dart'; // 引入刚才建的新建页
 
-class ExerciseLibraryScreen extends ConsumerStatefulWidget {
+class ExerciseLibraryScreen extends StatefulWidget {
   const ExerciseLibraryScreen({super.key});
 
   @override
-  ConsumerState<ExerciseLibraryScreen> createState() =>
-      _ExerciseLibraryScreenState();
+  State<ExerciseLibraryScreen> createState() => _ExerciseLibraryScreenState();
 }
 
-class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    // 首次启动触发预设数据写入
-    ref.read(seedExercisesProvider);
+class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
+  // 简单的获取所有 Routines
+  Future<List<WorkoutRoutine>> _loadRoutines() async {
+    final isar = await IsarService().db;
+    return await isar.workoutRoutines.where().findAll();
   }
 
   @override
   Widget build(BuildContext context) {
-    final exercisesAsync = ref.watch(allExercisesProvider);
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: const Text(
-          '动作库',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+          "我的动作组合",
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: const Color(0xFF4F75FF),
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: const Color(0xFF4F75FF),
-          indicatorSize: TabBarIndicatorSize.label,
-          tabs: const [
-            Tab(text: "预设动作"),
-            Tab(text: "自定义动作"),
-          ],
-        ),
       ),
-      body: exercisesAsync.when(
-        data: (exercises) {
-          // 过滤预设动作和自定义动作
-          final presets = exercises.where((e) => !e.isCustom).toList();
-          final customs = exercises.where((e) => e.isCustom).toList();
+      body: FutureBuilder<List<WorkoutRoutine>>(
+        future: _loadRoutines(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData)
+            return const Center(child: CircularProgressIndicator());
+          final routines = snapshot.data!;
 
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              _buildExerciseList(presets), // 预设动作页面
-              _buildExerciseList(customs, isCustomTab: true), // 自定义动作页面
-            ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: 添加动作页面/框
-        },
-        label: const Text('添加动作'),
-        icon: const Icon(Icons.add),
-        backgroundColor: const Color(0xFF4F75FF),
-      ),
-    );
-  }
+          if (routines.isEmpty) {
+            return const Center(
+              child: Text(
+                "还没有创建任何组合\n点击下方 + 号创建一个吧",
+                textAlign: TextAlign.center,
+              ),
+            );
+          }
 
-  // 构建动作列表：按照部位分组
-  Widget _buildExerciseList(List<Exercise> list, {bool isCustomTab = false}) {
-    if (list.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.category_outlined, size: 60, color: Colors.grey[300]),
-            const SizedBox(height: 10),
-            Text(
-              isCustomTab ? "没有自定义动作" : "暂无动作",
-              style: TextStyle(color: Colors.grey[400]),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // 关键逻辑：把扁平的list按照targetpart分组
-    // eg. Map:{"胸部":["卧推", "俯卧撑"], "背部":["引体向上"]}
-    final Map<String, List<Exercise>> grouped = {};
-    for (var e in list) {
-      if (!grouped.containsKey(e.targetPart)) {
-        grouped[e.targetPart] = [];
-      }
-      grouped[e.targetPart]!.add(e);
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: grouped.keys.length,
-      itemBuilder: (context, index) {
-        final part = grouped.keys.elementAt(index);
-        final partExercises = grouped[part]!;
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 卡片标题：部位名称
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "$part训练",
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: routines.length,
+            itemBuilder: (context, index) {
+              final routine = routines[index];
+              return Card(
+                elevation: 0,
+                color: Colors.white,
+                margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
+                  title: Text(
+                    routine.name,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 18,
                     ),
                   ),
-                  const Icon(Icons.more_vert, color: Colors.grey, size: 20),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // 动作气泡流
-              Wrap(
-                spacing: 8, // 水平间距
-                runSpacing: 8, // 垂直间距
-                children: partExercises.map((e) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF4FF), // 浅蓝色背景
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      e.name,
-                      style: const TextStyle(
-                        color: Color(0xFF4F75FF),
-                        fontWeight: FontWeight.w500,
-                        fontSize: 13,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-
-              const SizedBox(height: 12),
-              // 底部操作栏
-              Divider(height: 1, color: Colors.grey[100]),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(Icons.edit_outlined, size: 14, color: Colors.grey[500]),
-                  const SizedBox(width: 4),
-                  Text(
-                    "编辑",
-                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                  subtitle: Text(
+                    "${routine.exercises.length} 个动作",
+                    style: TextStyle(color: Colors.grey[500]),
                   ),
-                  const SizedBox(width: 16),
-                  Icon(Icons.add, size: 14, color: Colors.grey[500]),
-                  const SizedBox(width: 4),
-                  Text(
-                    "添加动作",
-                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Colors.grey,
                   ),
-                ],
+                  onTap: () {
+                    // TODO: 这里将来点击是 "使用该组合开始训练"
+                  },
+                ),
+              );
+            },
+          );
+        },
+      ),
+      // 悬浮按钮：新建组合
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton.icon(
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CreateRoutineScreen(),
+                ),
+              );
+              setState(() {}); // 刷新列表
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4F75FF),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-            ],
+              elevation: 4,
+            ),
+            icon: const Icon(Icons.add, color: Colors.white),
+            label: const Text(
+              "新建动作组合",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

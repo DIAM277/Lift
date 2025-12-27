@@ -1,4 +1,5 @@
 import 'package:isar/isar.dart';
+import 'package:lift/data/models/routine.dart';
 import 'package:path_provider/path_provider.dart';
 import 'models/exercise.dart';
 import 'models/workout.dart';
@@ -28,7 +29,7 @@ class IsarService {
 
     final dir = await getApplicationDocumentsDirectory();
     return await Isar.open(
-      [ExerciseSchema, WorkoutSessionSchema], //Schema
+      [ExerciseSchema, WorkoutSessionSchema, WorkoutRoutineSchema], //Schema
       directory: dir.path,
       inspector: true,
     );
