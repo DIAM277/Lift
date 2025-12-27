@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'data/isar_service.dart';
 import 'ui/screens/main_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   // 确保 Flutter 绑定初始化
@@ -11,7 +12,7 @@ void main() async {
   // 注意：这里只是为了触发数据库生成，之后我们会用 Riverpod 来管理它
   final isarService = IsarService();
   await isarService.db;
-
+  await initializeDateFormatting('zh_CN', null);
   runApp(const ProviderScope(child: MyApp()));
 }
 

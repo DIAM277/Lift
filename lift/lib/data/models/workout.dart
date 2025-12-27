@@ -18,6 +18,9 @@ class WorkoutSession {
 
   int duration = 0; // 训练时长
 
+  // 状态字段：planned | completed
+  String status = 'planned';
+
   // 训练动作列表,存放具体的动作组
   List<WorkoutSessionLog> exercises = []; // 训练动作列表
 }

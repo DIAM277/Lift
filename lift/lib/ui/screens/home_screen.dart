@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/home_provider.dart';
 import '../../data/models/workout.dart';
 import 'package:intl/intl.dart';
+import '../../data/isar_service.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -24,6 +25,19 @@ class HomeScreen extends ConsumerWidget {
         ),
         leading: const Icon(Icons.menu, color: Colors.black),
         actions: [
+          // 添加调试按钮
+          IconButton(
+            icon: const Icon(Icons.delete_forever),
+            onPressed: () async {
+              final isarService = IsarService(); // 或者通过 Provider 获取
+              await isarService.cleanDb();
+              // 如果使用了 Provider 监听数据，这里可能需要刷新 Provider
+              // ref.refresh(homeProvider);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Debug: All workouts deleted')),
+              );
+            },
+          ),
           // 此处可以存放头像
           CircleAvatar(
             backgroundColor: Colors.grey[200],
@@ -98,8 +112,8 @@ class HomeScreen extends ConsumerWidget {
           height: 50,
           child: ElevatedButton.icon(
             onPressed: () {
-              // TODO:跳转到新建训练日界面
-              print('创建训练日');
+              // TODO:跳转到训练进行中界面
+              print('开始训练');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4F75FF),
@@ -110,7 +124,7 @@ class HomeScreen extends ConsumerWidget {
             ),
             icon: const Icon(Icons.add, color: Colors.white),
             label: const Text(
-              "新建训练日",
+              "开始训练",
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,

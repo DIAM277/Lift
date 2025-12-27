@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 
 import 'home_screen.dart';
 import 'exercise_library_screen.dart';
+import 'calendar_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -18,7 +19,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _pages = [
     const HomeScreen(), // 首页
     const ExerciseLibraryScreen(), // 动作库
-    const Center(child: Text("回顾(开发中)")),
+    const CalendarScreen(),
   ];
 
   @override
@@ -41,11 +42,11 @@ class _MainScreenState extends State<MainScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: "首页"),
           BottomNavigationBarItem(
             icon: Icon(Icons.list_alt_rounded),
-            label: "动作库",
+            label: "动作组合",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_month_rounded),
-            label: "回顾",
+            label: "日历",
           ),
         ],
       ),
