@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 
-import 'home_screen.dart';
-import 'exercise_library_screen.dart';
-import 'calendar_screen.dart';
+import 'home/home_screen.dart';
+import 'routine/exercise_library_screen.dart';
+import 'calendar/calendar_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});

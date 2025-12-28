@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../data/isar_service.dart';
-import '../../data/models/routine.dart';
-import '../widgets/exercise_card.dart';
+import '../../../data/isar_service.dart';
+import '../../../data/models/routine.dart';
+import '../../widgets/exercise_card.dart';
+import '../../widgets/detail_header_card.dart'; // ✅ 添加导入
 
 class RoutineDetailScreen extends StatefulWidget {
   final int routineId;
@@ -57,7 +58,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
       ..exercises = original.exercises.map((exercise) {
         return RoutineExercise()
           ..exerciseName = exercise.exerciseName
-          //..targetPart = exercise.targetPart
+          // ..targetPart = exercise.targetPart
           ..isBodyweight = exercise.isBodyweight
           ..sets = exercise.sets.map((set) {
             return RoutineSet()
@@ -121,124 +122,84 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
         controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
         children: [
-          // 组合名称卡片
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4F75FF).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.fitness_center,
-                        color: Color(0xFF4F75FF),
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      "动作组合信息",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
+          // 头部信息卡片 - 使用通用组件
+          _buildHeaderCard(),
+          const SizedBox(height: 20),
 
-                // 组合名称 - 可编辑
-                if (_isEditing)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F7FA),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: TextField(
-                      controller: _nameController,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        height: 1.2,
-                      ),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        hintText: "输入组合名称",
-                        contentPadding: EdgeInsets.zero,
-                        isDense: true,
-                      ),
-                      onChanged: (value) {
-                        _routine!.name = value;
-                      },
-                    ),
-                  )
-                else
-                  Text(
-                    _routine!.name,
+          // 动作列表标题
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 12),
+            child: Row(
+              children: [
+                Text(
+                  "动作列表",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4F75FF).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    "${_routine!.exercises.length}",
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      height: 1.2,
+                      color: Color(0xFF4F75FF),
                     ),
                   ),
-
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(Icons.list_alt, size: 16, color: Colors.grey[500]),
-                    const SizedBox(width: 6),
-                    Text(
-                      "${_routine!.exercises.length} 个动作",
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                    ),
-                  ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
 
           // 使用通用动作卡片组件
-          ..._routine!.exercises.asMap().entries.map((entry) {
-            return ExerciseCard<RoutineExercise>(
-              key: ValueKey('routine_detail_${entry.key}'),
-              index: entry.key,
-              exercise: entry.value,
-              isEditable: _isEditing,
-              showBodyweightToggle: true,
-              showVolume: false,
-              onRemove: () {
-                setState(() {
-                  _routine!.exercises.removeAt(entry.key);
-                });
-              },
-              onChanged: () {
-                setState(() {});
-              },
-            );
-          }),
+          if (_routine!.exercises.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.fitness_center, size: 48, color: Colors.grey[300]),
+                  const SizedBox(height: 12),
+                  Text(
+                    "还没有添加动作",
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            )
+          else
+            ..._routine!.exercises.asMap().entries.map((entry) {
+              return ExerciseCard<RoutineExercise>(
+                key: ValueKey('routine_detail_${entry.key}'),
+                index: entry.key,
+                exercise: entry.value,
+                isEditable: _isEditing,
+                showBodyweightToggle: true,
+                showVolume: false,
+                onRemove: () {
+                  setState(() {
+                    _routine!.exercises.removeAt(entry.key);
+                  });
+                },
+                onChanged: () {
+                  setState(() {});
+                },
+              );
+            }),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -246,7 +207,6 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
-            // 添加动作按钮（仅在编辑状态显示）
             if (_isEditing)
               Expanded(
                 child: SizedBox(
@@ -275,7 +235,6 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
 
             if (_isEditing) const SizedBox(width: 12),
 
-            // 删除组合按钮
             Expanded(
               child: SizedBox(
                 height: 50,
@@ -306,11 +265,48 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
     );
   }
 
+  // ✅ 替换原来的 _buildHeaderCard 方法
+  Widget _buildHeaderCard() {
+    return DetailHeaderCard(
+      primaryColor: const Color(0xFF4F75FF),
+      icon: Icons.folder_special,
+      typeLabel: "动作组合",
+      title: _routine!.name,
+      isEditing: _isEditing,
+      titleController: _isEditing ? _nameController : null,
+      onTitleChanged: (value) {
+        _routine!.name = value;
+      },
+      stats: [
+        DetailStatItem(
+          icon: Icons.fitness_center,
+          value: "${_routine!.exercises.length}",
+          label: "动作数",
+          color: const Color(0xFF4F75FF),
+        ),
+        DetailStatItem(
+          icon: Icons.list_alt,
+          value: "${_getTotalSets()}",
+          label: "总组数",
+          color: Colors.orange,
+        ),
+      ],
+    );
+  }
+
+  int _getTotalSets() {
+    return _routine!.exercises.fold(
+      0,
+      (sum, exercise) => sum + exercise.sets.length,
+    );
+  }
+
   void _addExercise() {
     setState(() {
       _routine!.exercises.add(
         RoutineExercise()
           ..exerciseName = "新动作"
+          // ..targetPart = ""
           ..isBodyweight = false
           ..sets = [
             RoutineSet()

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
-import '../../data/models/workout.dart';
-import '../../providers/calendar_provider.dart';
+import '../../../data/models/workout.dart';
+import '../../../providers/calendar_provider.dart';
 import 'add_plan_screen.dart';
-import 'plan_detail_screen.dart';
+import '../workout/plan_detail_screen.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -134,7 +134,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 56, // 从 50 改为 56，与其他页面统一
                 child: ElevatedButton.icon(
                   onPressed: () async {
                     final result = await Navigator.push(
@@ -152,15 +152,21 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF4F75FF),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(
+                        16,
+                      ), // 从 12 改为 16，与其他页面统一
                     ),
                     elevation: 4,
                   ),
-                  icon: const Icon(Icons.add, color: Colors.white),
+                  icon: const Icon(
+                    Icons.add,
+                    color: Colors.white,
+                    size: 28,
+                  ), // 图标大小从默认改为 28
                   label: const Text(
                     "添加训练计划",
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),

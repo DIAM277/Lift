@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../data/models/workout.dart';
-import '../../data/isar_service.dart';
-import '../widgets/exercise_card.dart';
+import '../../../data/models/workout.dart';
+import '../../../data/isar_service.dart';
+import '../../widgets/exercise_card.dart';
+import '../../widgets/detail_header_card.dart'; // ✅ 添加导入
 
 class PlanDetailScreen extends StatefulWidget {
   final int sessionId;
@@ -134,8 +135,8 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
         controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
         children: [
-          // 头部信息卡片
-          _buildHeaderCard(isPlanned, isCompleted),
+          // 头部信息卡片 - 使用通用组件
+          _buildHeaderCard(),
           const SizedBox(height: 20),
 
           // 动作列表标题
@@ -219,7 +220,6 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
-            // 添加动作按钮（仅在编辑状态显示）
             if (isPlanned && _isEditing)
               Expanded(
                 child: SizedBox(
@@ -248,7 +248,6 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
 
             if (isPlanned && _isEditing) const SizedBox(width: 12),
 
-            // 删除按钮
             Expanded(
               child: SizedBox(
                 height: 50,
@@ -279,204 +278,68 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
     );
   }
 
-  Widget _buildHeaderCard(bool isPlanned, bool isCompleted) {
+  // ✅ 替换原来的 _buildHeaderCard 方法
+  Widget _buildHeaderCard() {
+    final isCompleted = _session!.status == 'completed';
+    final isPlanned = _session!.status == 'planned';
+
     final dateStr = DateFormat(
       'yyyy年MM月dd日 HH:mm',
       'zh_CN',
     ).format(_session!.startTime);
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isCompleted
-              ? [Colors.green, Colors.green[700]!]
-              : isPlanned
-              ? [Colors.orange, Colors.orange[700]!]
-              : [const Color(0xFF4F75FF), const Color(0xFF6B8FFF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color:
-                (isCompleted
-                        ? Colors.green
-                        : isPlanned
-                        ? Colors.orange
-                        : const Color(0xFF4F75FF))
-                    .withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+    // 构建统计项列表
+    final List<DetailStatItem> stats = [
+      DetailStatItem(
+        icon: Icons.fitness_center,
+        value: "${_session!.exercises.length}",
+        label: "动作数",
+        color: const Color(0xFF4F75FF),
       ),
-      child: Column(
-        children: [
-          // 顶部状态栏
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    isCompleted
-                        ? Icons.check_circle
-                        : isPlanned
-                        ? Icons.schedule
-                        : Icons.fitness_center,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isCompleted
-                            ? "已完成"
-                            : isPlanned
-                            ? "计划中"
-                            : "训练",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white.withOpacity(0.9),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        dateStr,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+    ];
 
-          // 主要内容区域
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 计划名称 - 可编辑
-                if (_isEditing && isPlanned)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F7FA),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: TextField(
-                      controller: _noteController,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        height: 1.2,
-                      ),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        hintText: "输入计划名称",
-                        contentPadding: EdgeInsets.zero,
-                        isDense: true,
-                      ),
-                      onChanged: (value) {
-                        _session!.note = value;
-                      },
-                    ),
-                  )
-                else
-                  Text(
-                    _session!.note ?? "无备注",
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      height: 1.2,
-                    ),
-                  ),
-
-                const SizedBox(height: 16),
-
-                // 统计信息
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatColumn(
-                        Icons.fitness_center,
-                        "${_session!.exercises.length}",
-                        "动作数",
-                        const Color(0xFF4F75FF),
-                      ),
-                    ),
-                    if (isCompleted) ...[
-                      Expanded(
-                        child: _buildStatColumn(
-                          Icons.monitor_weight,
-                          "${_session!.totalVolume.toInt()}kg",
-                          "总容量",
-                          Colors.orange,
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildStatColumn(
-                          Icons.timer_outlined,
-                          "${_session!.duration}分钟",
-                          "时长",
-                          Colors.green,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatColumn(
-    IconData icon,
-    String value,
-    String label,
-    Color color,
-  ) {
-    return Column(
-      children: [
-        Icon(icon, size: 24, color: color),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+    // 如果是已完成状态，添加容量和时长统计
+    if (isCompleted) {
+      stats.addAll([
+        DetailStatItem(
+          icon: Icons.monitor_weight,
+          value: "${_session!.totalVolume.toInt()}kg",
+          label: "总容量",
+          color: Colors.orange,
         ),
-        const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-      ],
+        DetailStatItem(
+          icon: Icons.timer_outlined,
+          value: "${_session!.duration}分钟",
+          label: "时长",
+          color: Colors.green,
+        ),
+      ]);
+    }
+
+    return DetailHeaderCard(
+      primaryColor: isCompleted
+          ? Colors.green
+          : isPlanned
+          ? Colors.orange
+          : const Color(0xFF4F75FF),
+      icon: isCompleted
+          ? Icons.check_circle
+          : isPlanned
+          ? Icons.schedule
+          : Icons.fitness_center,
+      typeLabel: isCompleted
+          ? "已完成"
+          : isPlanned
+          ? "计划中"
+          : "训练",
+      typeInfo: dateStr,
+      title: _session!.note ?? "无备注",
+      isEditing: isPlanned && _isEditing,
+      titleController: (isPlanned && _isEditing) ? _noteController : null,
+      onTitleChanged: (value) {
+        _session!.note = value;
+      },
+      stats: stats,
     );
   }
 

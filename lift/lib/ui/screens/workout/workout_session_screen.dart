@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../data/isar_service.dart';
-import '../../data/models/workout.dart';
-import '../widgets/rest_timer_overlay.dart';
+import '../../../data/isar_service.dart';
+import '../../../data/models/workout.dart';
+import '../../widgets/rest_timer_overlay.dart';
 
 class WorkoutSessionScreen extends StatefulWidget {
   final int sessionId;

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
-import '../../data/isar_service.dart';
-import '../../data/models/workout.dart';
+import '../../../data/isar_service.dart';
+import '../../../data/models/workout.dart';
 import 'plan_detail_screen.dart';
 
 class WorkoutHistoryScreen extends StatefulWidget {

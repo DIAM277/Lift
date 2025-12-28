@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
-import '../../data/isar_service.dart';
-import '../../data/models/workout.dart';
-import 'workout_session_screen.dart';
-import 'add_plan_screen.dart';
-import 'workout_history_screen.dart';
-import 'plan_detail_screen.dart';
+import '../../../data/isar_service.dart';
+import '../../../data/models/workout.dart';
+import '../workout/workout_session_screen.dart';
+import '../calendar/add_plan_screen.dart';
+import '../workout/workout_history_screen.dart';
+import '../workout/plan_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -200,105 +200,179 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTodayTrainingCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: _todayPlan != null
-              ? [const Color(0xFF4F75FF), const Color(0xFF6B8FFF)]
-              : [Colors.grey[300]!, Colors.grey[400]!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color:
-                (_todayPlan != null
-                        ? const Color(0xFF4F75FF)
-                        : Colors.grey[400]!)
-                    .withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+    final hasPlan = _todayPlan != null;
+
+    return InkWell(
+      onTap: () async {
+        if (hasPlan) {
+          // 有计划，跳转到计划详情
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PlanDetailScreen(sessionId: _todayPlan!.id),
+            ),
+          );
+          if (result == true) {
+            _loadData();
+          }
+        } else {
+          // 没有计划，跳转到添加计划页面
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddPlanScreen(selectedDate: today),
+            ),
+          );
+          if (result == true) {
+            _loadData();
+          }
+        }
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: hasPlan
+                ? [const Color(0xFF4F75FF), const Color(0xFF6B8FFF)]
+                : [const Color(0xFFFF6B6B), const Color(0xFFFF8E53)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color:
+                  (hasPlan ? const Color(0xFF4F75FF) : const Color(0xFFFF6B6B))
+                      .withOpacity(0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    hasPlan ? Icons.calendar_today : Icons.add_circle_outline,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.calendar_today,
-                  color: Colors.white,
-                  size: 24,
+                const SizedBox(width: 12),
+                const Text(
+                  "今日训练",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                "今日训练",
-                style: TextStyle(
-                  fontSize: 18,
+                const Spacer(),
+                // 添加一个提示图标
+                if (!hasPlan)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "点击创建",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withOpacity(0.9),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 12,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (hasPlan) ...[
+              Text(
+                _todayPlan!.note ?? "训练计划",
+                style: const TextStyle(
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (_todayPlan != null) ...[
-            Text(
-              _todayPlan!.note ?? "训练计划",
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+              const SizedBox(height: 16), // 删除了"1 个动作"文字，增加间距
+              Row(
+                children: [
+                  _buildPlanBadge(
+                    Icons.fitness_center,
+                    "${_todayPlan!.exercises.length} 个动作", // 添加文字说明
+                  ),
+                  const SizedBox(width: 8),
+                  _buildPlanBadge(
+                    Icons.timer,
+                    "约 ${_estimateDuration()} 分钟", // 优化文案
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "${_todayPlan!.exercises.length} 个动作",
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white.withOpacity(0.9),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _buildPlanBadge(
-                  Icons.fitness_center,
-                  "${_todayPlan!.exercises.length}",
+            ] else ...[
+              const Text(
+                "今天还没有训练计划",
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-                const SizedBox(width: 8),
-                _buildPlanBadge(Icons.timer, "~${_estimateDuration()}分钟"),
-              ],
-            ),
-          ] else ...[
-            const Text(
-              "今天还没有训练计划",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "点击下方按钮创建今天的训练计划吧",
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.white.withOpacity(0.9),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      "点击卡片立即创建今天的训练计划",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
+              const SizedBox(height: 16),
+              // 添加一些装饰性图标
+              Row(
+                children: [
+                  _buildEmptyPlanBadge(Icons.fitness_center, "选择动作"),
+                  const SizedBox(width: 8),
+                  _buildEmptyPlanBadge(Icons.schedule, "设置计划"),
+                  const SizedBox(width: 8),
+                  _buildEmptyPlanBadge(Icons.play_arrow, "开始训练"),
+                ],
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -314,13 +388,39 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 16, color: Colors.white),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6), // 增加图标和文字间距
           Text(
             text,
             style: const TextStyle(
               fontSize: 13,
               color: Colors.white,
               fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyPlanBadge(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.white.withOpacity(0.9)),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.white.withOpacity(0.9),
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
