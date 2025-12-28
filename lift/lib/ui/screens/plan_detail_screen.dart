@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../data/models/workout.dart';
 import '../../data/isar_service.dart';
+import '../widgets/exercise_card.dart';
 
 class PlanDetailScreen extends StatefulWidget {
   final int sessionId;
@@ -16,7 +17,8 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
   WorkoutSession? _session;
   bool _isEditing = false;
   bool _isLoading = true;
-  late TextEditingController _noteController; // 计划名称控制器
+  late TextEditingController _noteController;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -28,10 +30,10 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
   @override
   void dispose() {
     _noteController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  // 从数据库加载最新数据
   Future<void> _loadSession() async {
     final isar = await IsarService().db;
     final session = await isar.workoutSessions.get(widget.sessionId);
@@ -49,7 +51,6 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
     }
   }
 
-  // 深拷贝 WorkoutSession
   WorkoutSession _deepCopySession(WorkoutSession original) {
     final copy = WorkoutSession()
       ..id = original.id
@@ -72,15 +73,6 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
       }).toList();
 
     return copy;
-  }
-
-  // 计算单个动作的总容量
-  double _calculateExerciseVolume(WorkoutSessionLog exercise) {
-    double total = 0;
-    for (var set in exercise.sets) {
-      total += set.weight * set.reps;
-    }
-    return total;
   }
 
   @override
@@ -106,6 +98,12 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context, true);
+          },
+        ),
         title: Text(
           isPlanned ? "训练计划" : "训练记录",
           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -136,6 +134,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
       ),
       resizeToAvoidBottomInset: false,
       body: ListView(
+        controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
         children: [
           // 头部信息卡片
@@ -248,12 +247,23 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
           ),
           const SizedBox(height: 20),
 
-          // 动作列表
+          // 使用通用动作卡片组件
           ..._session!.exercises.asMap().entries.map((entry) {
-            return _buildExerciseCard(
-              entry.key,
-              entry.value,
-              isPlanned && _isEditing,
+            return ExerciseCard<WorkoutSessionLog>(
+              key: ValueKey('session_${entry.key}'),
+              index: entry.key,
+              exercise: entry.value,
+              isEditable: isPlanned && _isEditing,
+              showBodyweightToggle: true,
+              showVolume: false,
+              onRemove: () {
+                setState(() {
+                  _session!.exercises.removeAt(entry.key);
+                });
+              },
+              onChanged: () {
+                setState(() {});
+              },
             );
           }),
         ],
@@ -261,34 +271,68 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: ElevatedButton.icon(
-            onPressed: _deletePlan,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+        child: Row(
+          children: [
+            // 添加动作按钮（仅在编辑状态显示）
+            if (isPlanned && _isEditing)
+              Expanded(
+                child: SizedBox(
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    onPressed: _addExercise,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4F75FF),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 4,
+                    ),
+                    icon: const Icon(Icons.add, color: Colors.white),
+                    label: const Text(
+                      "添加动作",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              elevation: 4,
-            ),
-            icon: const Icon(Icons.delete_outline, color: Colors.white),
-            label: Text(
-              isPlanned ? "删除训练计划" : "删除训练记录",
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+
+            if (isPlanned && _isEditing) const SizedBox(width: 12),
+
+            // 删除训练计划按钮
+            Expanded(
+              child: SizedBox(
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: _deletePlan,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
+                  ),
+                  icon: const Icon(Icons.delete_outline, color: Colors.white),
+                  label: Text(
+                    isPlanned ? "删除计划" : "删除记录",
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 
-  // 统计项组件
   Widget _buildStatItem(IconData icon, String value, String label) {
     return Row(
       children: [
@@ -311,249 +355,30 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
     );
   }
 
-  Widget _buildExerciseCard(
-    int index,
-    WorkoutSessionLog exercise,
-    bool isEditable,
-  ) {
-    final volume = _calculateExerciseVolume(exercise);
+  void _addExercise() {
+    setState(() {
+      _session!.exercises.add(
+        WorkoutSessionLog()
+          ..exerciseName = "新动作"
+          ..targetPart = ""
+          ..sets = [
+            WorkoutSet()
+              ..weight = 20
+              ..reps = 12
+              ..isCompleted = false,
+          ],
+      );
+    });
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 12, 12), // 修改右侧 padding
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 动作名称 - 可编辑
-                      if (isEditable)
-                        _ExerciseNameInput(
-                          exercise: exercise,
-                          onChanged: () => setState(() {}),
-                        )
-                      else
-                        Text(
-                          exercise.exerciseName ?? "未命名动作",
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "单动作总容量: ${volume.toInt()}kg",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (isEditable)
-                  IconButton(
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.redAccent, // 修改：改为红色
-                      size: 24,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 40,
-                      minHeight: 40,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _session!.exercises.removeAt(index);
-                      });
-                    },
-                  ),
-              ],
-            ),
-          ),
-          Divider(height: 1, color: Colors.grey[200]),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 50,
-                      child: Text(
-                        "组数",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        "重量(kg)",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        "次数",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 60,
-                      child: Text(
-                        "容量(kg)",
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    if (isEditable) const SizedBox(width: 40),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                ...exercise.sets.asMap().entries.map((setEntry) {
-                  if (isEditable) {
-                    return _SetRowInput(
-                      key: ValueKey('${index}_${setEntry.key}'),
-                      index: setEntry.key,
-                      set: setEntry.value,
-                      onRemove: () {
-                        setState(() {
-                          exercise.sets.removeAt(setEntry.key);
-                        });
-                      },
-                      onChanged: () {
-                        setState(() {});
-                      },
-                    );
-                  } else {
-                    return _buildSetRowDisplay(setEntry.key, setEntry.value);
-                  }
-                }),
-
-                if (isEditable) ...[
-                  const SizedBox(height: 4),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          double w = 20;
-                          int r = 12;
-                          if (exercise.sets.isNotEmpty) {
-                            w = exercise.sets.last.weight;
-                            r = exercise.sets.last.reps;
-                          }
-                          exercise.sets.add(
-                            WorkoutSet()
-                              ..weight = w
-                              ..reps = r
-                              ..isCompleted = false,
-                          );
-                        });
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF4F75FF),
-                        side: BorderSide(color: Colors.grey[300]!),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text("添加组"),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSetRowDisplay(int index, WorkoutSet set) {
-    final volume = (set.weight * set.reps).toInt();
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 50,
-            child: Text(
-              "${index + 1}",
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              set.weight.toStringAsFixed(1).replaceAll(".0", ""),
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              set.reps.toString(),
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-          ),
-          SizedBox(
-            width: 60,
-            child: Text(
-              volume.toString(),
-              textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF4F75FF),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   void _updatePlan() async {
@@ -569,8 +394,6 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('保存成功')));
-      // 返回时通知刷新
-      Navigator.pop(context, true);
     }
   }
 
@@ -580,7 +403,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text("确认删除"),
         content: Text(
-          _session!.status == 'planned' ? "确定要删除这个训练计划吗？" : "确定要删除这条训练记录吗？",
+          _session!.status == 'planned' ? "确定要删除这个训练计划吗?" : "确定要删除这条训练记录吗？",
         ),
         actions: [
           TextButton(
@@ -606,199 +429,5 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
         Navigator.pop(context, true);
       }
     }
-  }
-}
-
-// 动作名称输入组件
-class _ExerciseNameInput extends StatefulWidget {
-  final WorkoutSessionLog exercise;
-  final VoidCallback onChanged;
-
-  const _ExerciseNameInput({required this.exercise, required this.onChanged});
-
-  @override
-  State<_ExerciseNameInput> createState() => _ExerciseNameInputState();
-}
-
-class _ExerciseNameInputState extends State<_ExerciseNameInput> {
-  late TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(
-      text: widget.exercise.exerciseName ?? "",
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: TextField(
-        controller: _controller,
-        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          hintText: "输入动作名称",
-          contentPadding: EdgeInsets.zero,
-          isDense: true,
-        ),
-        onChanged: (value) {
-          widget.exercise.exerciseName = value;
-          widget.onChanged();
-        },
-      ),
-    );
-  }
-}
-
-// 组输入行组件
-class _SetRowInput extends StatefulWidget {
-  final int index;
-  final WorkoutSet set;
-  final VoidCallback onRemove;
-  final VoidCallback? onChanged;
-
-  const _SetRowInput({
-    super.key,
-    required this.index,
-    required this.set,
-    required this.onRemove,
-    this.onChanged,
-  });
-
-  @override
-  State<_SetRowInput> createState() => _SetRowInputState();
-}
-
-class _SetRowInputState extends State<_SetRowInput> {
-  late TextEditingController _weightCtrl;
-  late TextEditingController _repsCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _weightCtrl = TextEditingController(
-      text: widget.set.weight.toStringAsFixed(1).replaceAll(".0", ""),
-    );
-    _repsCtrl = TextEditingController(text: widget.set.reps.toString());
-  }
-
-  @override
-  void dispose() {
-    _weightCtrl.dispose();
-    _repsCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 50,
-            child: Text(
-              "${widget.index + 1}",
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              height: 36,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: TextFormField(
-                controller: _weightCtrl,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                onChanged: (val) {
-                  widget.set.weight = double.tryParse(val) ?? 0;
-                  widget.onChanged?.call();
-                },
-              ),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              height: 36,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: TextFormField(
-                controller: _repsCtrl,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                onChanged: (val) {
-                  widget.set.reps = int.tryParse(val) ?? 0;
-                  widget.onChanged?.call();
-                },
-              ),
-            ),
-          ),
-          SizedBox(
-            width: 60,
-            child: Text(
-              "${(widget.set.weight * widget.set.reps).toInt()}",
-              textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF4F75FF),
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.remove_circle_outline,
-              color: Colors.redAccent,
-              size: 20,
-            ),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-            onPressed: widget.onRemove,
-          ),
-        ],
-      ),
-    );
   }
 }

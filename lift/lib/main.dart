@@ -9,7 +9,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // 初始化数据库服务
-  // 注意：这里只是为了触发数据库生成，之后我们会用 Riverpod 来管理它
   final isarService = IsarService();
   await isarService.db;
   await initializeDateFormatting('zh_CN', null);

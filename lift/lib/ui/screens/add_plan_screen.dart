@@ -3,6 +3,7 @@ import 'package:isar/isar.dart';
 import '../../data/isar_service.dart';
 import '../../data/models/workout.dart';
 import '../../data/models/routine.dart';
+import '../widgets/exercise_card.dart';
 
 class AddPlanScreen extends StatefulWidget {
   final DateTime selectedDate;
@@ -16,10 +17,12 @@ class AddPlanScreen extends StatefulWidget {
 class _AddPlanScreenState extends State<AddPlanScreen> {
   final TextEditingController _nameController = TextEditingController();
   final List<WorkoutSessionLog> _exercises = [];
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void dispose() {
     _nameController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -44,223 +47,189 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
           ),
         ],
       ),
-      body: Column(
+      resizeToAvoidBottomInset: false,
+      body: ListView(
+        controller: _scrollController,
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
         children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                // 计划名称输入
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: TextField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(
-                      hintText: "给训练计划起个名字",
-                      border: InputBorder.none,
-                    ),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+          // 计划名称输入卡片
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
                 ),
-                const SizedBox(height: 16),
-
-                // 动作导入按钮组
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Row(
                   children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _showAddExerciseDialog,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF4F75FF),
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        icon: const Icon(Icons.add),
-                        label: const Text("添加动作"),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.orangeAccent.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.schedule,
+                        color: Colors.orangeAccent,
+                        size: 20,
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _showImportRoutineDialog,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF4F75FF),
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        icon: const Icon(Icons.file_download),
-                        label: const Text("导入组合"),
+                    Text(
+                      "训练计划信息",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-
-                // 动作卡片列表
-                ..._exercises.asMap().entries.map((entry) {
-                  return _buildExerciseCard(entry.key, entry.value);
-                }),
-
-                const SizedBox(height: 80),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F7FA),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: TextField(
+                    controller: _nameController,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      height: 1.2,
+                    ),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      hintText: "输入计划名称",
+                      contentPadding: EdgeInsets.zero,
+                      isDense: true,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
+          const SizedBox(height: 20),
 
-  Widget _buildExerciseCard(int index, WorkoutSessionLog exercise) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          // 卡片头部
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  exercise.exerciseName ?? "未命名动作",
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.grey),
-                onPressed: () => setState(() => _exercises.removeAt(index)),
-              ),
-            ],
-          ),
-          const Divider(),
-
-          // 表头
-          Row(
-            children: const [
-              SizedBox(
-                width: 40,
-                child: Center(
-                  child: Text(
-                    "组",
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Center(
-                  child: Text(
-                    "重量 (kg)",
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Center(
-                  child: Text(
-                    "次数",
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ),
-              ),
-              SizedBox(width: 40),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // 组列表
-          ...exercise.sets.asMap().entries.map((setEntry) {
-            return _SetRowInput(
-              index: setEntry.key,
-              set: setEntry.value,
-              onRemove: () =>
-                  setState(() => exercise.sets.removeAt(setEntry.key)),
+          // 使用通用动作卡片组件
+          ..._exercises.asMap().entries.map((entry) {
+            return ExerciseCard<WorkoutSessionLog>(
+              key: ValueKey('plan_${entry.key}'),
+              index: entry.key,
+              exercise: entry.value,
+              isEditable: true,
+              showBodyweightToggle: true,
+              showVolume: false,
+              onRemove: () {
+                setState(() {
+                  _exercises.removeAt(entry.key);
+                });
+              },
+              onChanged: () {
+                setState(() {});
+              },
             );
           }),
-
-          // 添加组按钮
-          TextButton.icon(
-            onPressed: () => setState(() {
-              double w = 20;
-              int r = 12;
-              if (exercise.sets.isNotEmpty) {
-                w = exercise.sets.last.weight;
-                r = exercise.sets.last.reps;
-              }
-              exercise.sets.add(
-                WorkoutSet()
-                  ..weight = w
-                  ..reps = r
-                  ..isCompleted = false,
-              );
-            }),
-            icon: const Icon(Icons.add, size: 16),
-            label: const Text("添加组"),
-          ),
         ],
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: _addExercise,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4F75FF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
+                  ),
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  label: const Text(
+                    "添加动作",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: SizedBox(
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: _showImportRoutineDialog,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF4F75FF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(
+                        color: Color(0xFF4F75FF),
+                        width: 2,
+                      ),
+                    ),
+                    elevation: 4,
+                  ),
+                  icon: const Icon(Icons.folder_open),
+                  label: const Text(
+                    "导入组合",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  void _showAddExerciseDialog() {
-    String tempName = "";
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("添加动作"),
-        content: TextField(
-          autofocus: true,
-          decoration: const InputDecoration(hintText: "输入动作名称"),
-          onChanged: (v) => tempName = v,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("取消"),
-          ),
-          TextButton(
-            onPressed: () {
-              if (tempName.isNotEmpty) {
-                setState(() {
-                  _exercises.add(
-                    WorkoutSessionLog()
-                      ..exerciseName = tempName
-                      ..sets = [
-                        WorkoutSet()
-                          ..weight = 20
-                          ..reps = 12
-                          ..isCompleted = false,
-                      ],
-                  );
-                });
-                Navigator.pop(ctx);
-              }
-            },
-            child: const Text("确定"),
-          ),
-        ],
-      ),
-    );
+  void _addExercise() {
+    setState(() {
+      _exercises.add(
+        WorkoutSessionLog()
+          ..exerciseName = "新动作"
+          ..targetPart = ""
+          ..sets = [
+            WorkoutSet()
+              ..weight = 20
+              ..reps = 12
+              ..isCompleted = false,
+          ],
+      );
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   void _showImportRoutineDialog() async {
@@ -279,17 +248,51 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("选择动作组合"),
+        title: const Text(
+          "选择动作组合",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         content: SizedBox(
           width: double.maxFinite,
-          child: ListView.builder(
+          child: ListView.separated(
             shrinkWrap: true,
             itemCount: routines.length,
+            separatorBuilder: (context, index) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final routine = routines[index];
               return ListTile(
-                title: Text(routine.name),
-                subtitle: Text("${routine.exercises.length} 个动作"),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4F75FF).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.fitness_center,
+                    color: Color(0xFF4F75FF),
+                    size: 24,
+                  ),
+                ),
+                title: Text(
+                  routine.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                subtitle: Text(
+                  "${routine.exercises.length} 个动作",
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                ),
+                trailing: const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Colors.grey,
+                ),
                 onTap: () {
                   _importRoutine(routine);
                   Navigator.pop(ctx);
@@ -310,11 +313,11 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
 
   void _importRoutine(WorkoutRoutine routine) {
     setState(() {
-      // 深拷贝 Routine 的数据
       for (var routineEx in routine.exercises) {
         _exercises.add(
           WorkoutSessionLog()
             ..exerciseName = routineEx.exerciseName
+            ..targetPart = ""
             ..sets = routineEx.sets.map((routineSet) {
               return WorkoutSet()
                 ..weight = routineSet.weight
@@ -328,13 +331,33 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
     if (_nameController.text.isEmpty) {
       _nameController.text = routine.name;
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已导入 ${routine.exercises.length} 个动作')),
+    );
   }
 
   void _savePlan() async {
-    if (_nameController.text.isEmpty || _exercises.isEmpty) {
+    if (_nameController.text.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('请输入计划名称并添加至少一个动作')));
+      ).showSnackBar(const SnackBar(content: Text('请输入计划名称')));
+      return;
+    }
+    if (_exercises.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('请至少添加一个动作')));
       return;
     }
 
@@ -350,110 +373,7 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
     });
 
     if (mounted) {
-      Navigator.pop(context, true); // 返回 true 表示添加成功
+      Navigator.pop(context, true);
     }
-  }
-}
-
-// 组输入行组件
-class _SetRowInput extends StatefulWidget {
-  final int index;
-  final WorkoutSet set;
-  final VoidCallback onRemove;
-
-  const _SetRowInput({
-    required this.index,
-    required this.set,
-    required this.onRemove,
-  });
-
-  @override
-  State<_SetRowInput> createState() => _SetRowInputState();
-}
-
-class _SetRowInputState extends State<_SetRowInput> {
-  late TextEditingController _weightCtrl;
-  late TextEditingController _repsCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _weightCtrl = TextEditingController(
-      text: widget.set.weight.toStringAsFixed(1).replaceAll(".0", ""),
-    );
-    _repsCtrl = TextEditingController(text: widget.set.reps.toString());
-  }
-
-  @override
-  void dispose() {
-    _weightCtrl.dispose();
-    _repsCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 40,
-            child: Center(
-              child: Text(
-                "${widget.index + 1}",
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: TextFormField(
-                controller: _weightCtrl,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                decoration: const InputDecoration(border: InputBorder.none),
-                onChanged: (val) =>
-                    widget.set.weight = double.tryParse(val) ?? 0,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: TextFormField(
-                controller: _repsCtrl,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                decoration: const InputDecoration(border: InputBorder.none),
-                onChanged: (val) => widget.set.reps = int.tryParse(val) ?? 0,
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.remove_circle_outline,
-              color: Colors.redAccent,
-              size: 20,
-            ),
-            onPressed: widget.onRemove,
-          ),
-        ],
-      ),
-    );
   }
 }
