@@ -64,99 +64,60 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
-        child: Stack(
-          // ✅ 使用 Stack 替代 floatingActionButton
-          children: [
-            RefreshIndicator(
-              onRefresh: _loadData,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
+        child: RefreshIndicator(
+          onRefresh: _loadData,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _buildWelcomeHeader(),
+              const SizedBox(height: 24),
+              _buildTodayTrainingCard(),
+              const SizedBox(height: 20),
+              _buildQuickStats(),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildWelcomeHeader(),
-                  const SizedBox(height: 24),
-                  _buildTodayTrainingCard(),
-                  const SizedBox(height: 20),
-                  _buildQuickStats(),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 4),
-                        child: Text(
-                          "最近训练",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[800],
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: Text(
+                      "最近训练",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                  ),
+                  if (_recentSessions.isNotEmpty)
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const WorkoutHistoryScreen(),
                           ),
+                        );
+                      },
+                      icon: const Icon(Icons.history, size: 18),
+                      label: const Text(
+                        "查看所有记录",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (_recentSessions.isNotEmpty)
-                        TextButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const WorkoutHistoryScreen(),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.history, size: 18),
-                          label: const Text(
-                            "查看所有记录",
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          style: TextButton.styleFrom(
-                            foregroundColor: const Color(0xFF4F75FF),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _buildRecentSessions(),
-                  const SizedBox(height: 80),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF4F75FF),
+                      ),
+                    ),
                 ],
               ),
-            ),
-            // ✅ 底部按钮使用 Positioned
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: 16,
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: _handleStartWorkout,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4F75FF),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 4,
-                  ),
-                  icon: Icon(
-                    _todayPlan != null ? Icons.play_arrow : Icons.add,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                  label: Text(
-                    _todayPlan != null ? "开始训练" : "创建今日计划",
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              _buildRecentSessions(),
+              const SizedBox(height: 20), // ✅ 减少底部间距
+            ],
+          ),
         ),
       ),
     );
@@ -199,6 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return InkWell(
       onTap: () async {
         if (hasPlan) {
+          // ✅ 有计划时进入详情页
           final result = await Navigator.push(
             context,
             MaterialPageRoute(
@@ -209,6 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _loadData();
           }
         } else {
+          // 无计划时创建计划
           final now = DateTime.now();
           final today = DateTime(now.year, now.month, now.day);
           final result = await Navigator.push(
@@ -271,36 +234,36 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const Spacer(),
-                if (!hasPlan)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          "点击创建",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white.withOpacity(0.9),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.arrow_forward_ios,
-                          size: 12,
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                      ],
-                    ),
+                // ✅ 更新提示文字
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
                   ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        hasPlan ? "点击开始" : "点击创建",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withOpacity(0.9),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 12,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -463,24 +426,41 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Icon(icon, color: color, size: 28),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+              ],
+            ),
+          ),
           Text(
             value,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
         ],
       ),
     );
@@ -595,34 +575,5 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }).toList(),
     );
-  }
-
-  void _handleStartWorkout() async {
-    if (_todayPlan != null) {
-      final result = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => WorkoutSessionScreen(sessionId: _todayPlan!.id),
-        ),
-      );
-
-      if (result == true) {
-        _loadData();
-      }
-    } else {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-
-      final result = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => AddPlanScreen(selectedDate: today),
-        ),
-      );
-
-      if (result == true) {
-        _loadData();
-      }
-    }
   }
 }

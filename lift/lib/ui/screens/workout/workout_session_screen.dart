@@ -14,7 +14,8 @@ class WorkoutSessionScreen extends StatefulWidget {
   State<WorkoutSessionScreen> createState() => _WorkoutSessionScreenState();
 }
 
-class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
+class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
+    with SingleTickerProviderStateMixin {
   WorkoutSession? _session;
   bool _isLoading = true;
   bool _showRestTimer = false;
@@ -22,16 +23,49 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   Timer? _elapsedTimer;
   int _elapsedSeconds = 0;
 
+  // ✅ 长按动画控制器
+  late AnimationController _longPressController;
+  late Animation<double> _progressAnimation;
+  bool _isLongPressing = false;
+  Timer? _longPressTimer;
+
   @override
   void initState() {
     super.initState();
     _loadSession();
+
+    // ✅ 初始化长按动画控制器
+    _longPressController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500), // 1.5秒长按
+    );
+
+    _progressAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _longPressController, curve: Curves.easeInOut),
+    );
+
+    _longPressController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _showForceEndDialog();
+        _resetLongPress();
+      }
+    });
   }
 
   @override
   void dispose() {
     _elapsedTimer?.cancel();
+    _longPressTimer?.cancel();
+    _longPressController.dispose();
     super.dispose();
+  }
+
+  void _resetLongPress() {
+    setState(() {
+      _isLongPressing = false;
+    });
+    _longPressController.reset();
+    _longPressTimer?.cancel();
   }
 
   Future<void> _loadSession() async {
@@ -62,17 +96,14 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     });
   }
 
-  // 检查是否所有组都已完成
   bool _isExerciseCompleted(WorkoutSessionLog exercise) {
     return exercise.sets.every((set) => set.isCompleted);
   }
 
-  // 检查是否所有动作都已完成
   bool _isAllCompleted() {
     return _session!.exercises.every((ex) => _isExerciseCompleted(ex));
   }
 
-  // 计算总容量
   double _calculateTotalVolume() {
     double total = 0;
     for (var exercise in _session!.exercises) {
@@ -85,7 +116,6 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     return total;
   }
 
-  // 计算已完成的组数
   String _getCompletedSetsInfo() {
     int completed = 0;
     int total = 0;
@@ -132,7 +162,6 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
           ),
           body: Column(
             children: [
-              // 顶部统计卡片
               Container(
                 margin: const EdgeInsets.all(16),
                 padding: const EdgeInsets.all(20),
@@ -180,8 +209,6 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                   ],
                 ),
               ),
-
-              // 动作列表
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
@@ -203,13 +230,13 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
             child: _isAllCompleted()
                 ? SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: 56,
                     child: ElevatedButton.icon(
                       onPressed: _completeWorkout,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         elevation: 4,
                       ),
@@ -224,52 +251,12 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                       ),
                     ),
                   )
-                : SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: GestureDetector(
-                      onLongPress: () => _showForceEndDialog(),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey[400],
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.stop_circle_outlined,
-                              color: Colors.grey[700],
-                              size: 24,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              "长按结束锻炼",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey[700],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                : _buildLongPressButton(), // ✅ 使用新的长按按钮
           ),
         ),
-
-        // 休息计时器覆盖层
         if (_showRestTimer)
           RestTimerOverlay(
-            durationInSeconds: 120, // 2分钟
+            durationInSeconds: 120,
             onComplete: () {
               setState(() {
                 _showRestTimer = false;
@@ -278,6 +265,111 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
             },
           ),
       ],
+    );
+  }
+
+  // ✅ 新的长按按钮实现
+  Widget _buildLongPressButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: GestureDetector(
+        onLongPressStart: (_) {
+          setState(() {
+            _isLongPressing = true;
+          });
+          _longPressController.forward();
+        },
+        onLongPressEnd: (_) {
+          _resetLongPress();
+        },
+        onLongPressCancel: () {
+          _resetLongPress();
+        },
+        child: AnimatedBuilder(
+          animation: _progressAnimation,
+          builder: (context, child) {
+            return Stack(
+              children: [
+                // 背景按钮
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: _isLongPressing
+                          ? [const Color(0xFFFF6B6B), const Color(0xFFFF8E53)]
+                          : [Colors.grey[300]!, Colors.grey[400]!],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color:
+                            (_isLongPressing
+                                    ? const Color(0xFFFF6B6B)
+                                    : Colors.grey[400]!)
+                                .withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 进度条
+                if (_isLongPressing)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FractionallySizedBox(
+                        widthFactor: _progressAnimation.value,
+                        child: Container(
+                          height: 56,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFF4444), Color(0xFFFF6B6B)],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // 按钮内容
+                Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _isLongPressing
+                            ? Icons.warning_amber_rounded
+                            : Icons.stop_circle_outlined,
+                        color: _isLongPressing
+                            ? Colors.white
+                            : Colors.grey[700],
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        _isLongPressing ? "继续长按结束..." : "长按结束锻炼",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: _isLongPressing
+                              ? Colors.white
+                              : Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 
@@ -360,7 +452,6 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
             child: Column(
               children: [
-                // 表头
                 Row(
                   children: [
                     SizedBox(
@@ -400,8 +491,6 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                   ],
                 ),
                 const SizedBox(height: 6),
-
-                // 组列表
                 ...exercise.sets.asMap().entries.map((entry) {
                   return _buildSetRow(
                     exercise,
@@ -565,16 +654,13 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
       exercise.sets[setIndex].isCompleted = true;
     });
 
-    // 检查是否还有未完成的组
     final hasMoreSets = exercise.sets.any((set) => !set.isCompleted);
 
     if (hasMoreSets) {
-      // 显示休息计时器
       setState(() {
         _showRestTimer = true;
       });
     } else {
-      // 该动作所有组都完成了
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${exercise.exerciseName} 已完成！'),

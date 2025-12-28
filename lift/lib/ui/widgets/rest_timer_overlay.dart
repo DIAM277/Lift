@@ -7,7 +7,7 @@ class RestTimerOverlay extends StatefulWidget {
 
   const RestTimerOverlay({
     super.key,
-    this.durationInSeconds = 120, // 默认2分钟
+    this.durationInSeconds = 120,
     required this.onComplete,
   });
 
@@ -59,6 +59,18 @@ class _RestTimerOverlayState extends State<RestTimerOverlay>
     return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
+  // ✅ 调整时间
+  void _adjustTime(int seconds) {
+    setState(() {
+      _remainingSeconds = (_remainingSeconds + seconds).clamp(0, 600); // 最多10分钟
+      if (_remainingSeconds == 0) {
+        _timer?.cancel();
+        _pulseController.stop();
+        widget.onComplete();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -67,7 +79,6 @@ class _RestTimerOverlayState extends State<RestTimerOverlay>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 脉动的图标
             ScaleTransition(
               scale: Tween<double>(begin: 0.9, end: 1.1).animate(
                 CurvedAnimation(
@@ -98,7 +109,6 @@ class _RestTimerOverlayState extends State<RestTimerOverlay>
               ),
             ),
             const SizedBox(height: 16),
-            // 倒计时显示
             Text(
               _formatTime(_remainingSeconds),
               style: const TextStyle(
@@ -108,7 +118,28 @@ class _RestTimerOverlayState extends State<RestTimerOverlay>
                 fontFeatures: [FontFeature.tabularFigures()],
               ),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 32),
+
+            // ✅ 时间调整按钮
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildTimeAdjustButton(
+                  icon: Icons.remove,
+                  label: "-10s",
+                  onPressed: () => _adjustTime(-10),
+                ),
+                const SizedBox(width: 20),
+                _buildTimeAdjustButton(
+                  icon: Icons.add,
+                  label: "+10s",
+                  onPressed: () => _adjustTime(10),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 32),
+
             // 跳过按钮
             OutlinedButton(
               onPressed: () {
@@ -133,6 +164,46 @@ class _RestTimerOverlayState extends State<RestTimerOverlay>
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // ✅ 时间调整按钮组件
+  Widget _buildTimeAdjustButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: Colors.white, size: 20),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

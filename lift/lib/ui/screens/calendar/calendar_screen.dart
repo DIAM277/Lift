@@ -134,7 +134,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: SizedBox(
                 width: double.infinity,
-                height: 56, // 从 50 改为 56，与其他页面统一
+                height: 56,
                 child: ElevatedButton.icon(
                   onPressed: () async {
                     final result = await Navigator.push(
@@ -152,17 +152,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF4F75FF),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        16,
-                      ), // 从 12 改为 16，与其他页面统一
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     elevation: 4,
                   ),
-                  icon: const Icon(
-                    Icons.add,
-                    color: Colors.white,
-                    size: 28,
-                  ), // 图标大小从默认改为 28
+                  icon: const Icon(Icons.add, color: Colors.white, size: 28),
                   label: const Text(
                     "添加训练计划",
                     style: TextStyle(
@@ -291,12 +285,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   Widget _buildDayWorkoutsList(List<WorkoutSession> workouts) {
     if (workouts.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.only(bottom: 100), // 添加底部内边距
+        padding: const EdgeInsets.only(bottom: 100),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 60), // 添加顶部间距
+              const SizedBox(height: 60),
               Icon(Icons.fitness_center, size: 48, color: Colors.grey[300]),
               const SizedBox(height: 16),
               Text(
@@ -312,25 +306,120 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       );
     }
 
+    // ✅ 排序：计划中(planned)优先，已完成(completed)其次
+    final sortedWorkouts = List<WorkoutSession>.from(workouts)
+      ..sort((a, b) {
+        // 先按状态排序：planned < completed
+        if (a.status == b.status) {
+          // 同状态下按时间排序（新的在前）
+          return b.startTime.compareTo(a.startTime);
+        }
+        // planned 在前
+        return a.status == 'planned' ? -1 : 1;
+      });
+
     final dateStr = DateFormat('MM月dd日', 'zh_CN').format(_selectedDay!);
 
+    // ✅ 统计计划数和完成数
+    final plannedCount = workouts.where((w) => w.status == 'planned').length;
+    final completedCount = workouts
+        .where((w) => w.status == 'completed')
+        .length;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100), // 增加底部内边距到100
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.only(bottom: 12, top: 8, left: 4),
-            child: Text(
-              dateStr,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
-              ),
+            child: Row(
+              children: [
+                Text(
+                  dateStr,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // ✅ 添加统计标签
+                if (plannedCount > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.orange.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.schedule,
+                          size: 12,
+                          color: Colors.orange,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "$plannedCount 个计划",
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.orange,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (completedCount > 0) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.green.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.check_circle,
+                          size: 12,
+                          color: Colors.green,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "$completedCount 已完成",
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.green,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          ...workouts.map((workout) => _buildWorkoutCard(workout)),
+          // ✅ 使用排序后的列表
+          ...sortedWorkouts.map((workout) => _buildWorkoutCard(workout)),
         ],
       ),
     );

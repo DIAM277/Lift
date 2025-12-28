@@ -3,7 +3,8 @@ import 'package:intl/intl.dart';
 import '../../../data/models/workout.dart';
 import '../../../data/isar_service.dart';
 import '../../widgets/exercise_card.dart';
-import '../../widgets/detail_header_card.dart'; // ✅ 添加导入
+import '../../widgets/detail_header_card.dart';
+import 'workout_session_screen.dart'; // ✅ 添加导入
 
 class PlanDetailScreen extends StatefulWidget {
   final int sessionId;
@@ -76,6 +77,19 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
     return copy;
   }
 
+  // ✅ 判断是否是今天的计划
+  bool _isTodayPlan() {
+    if (_session == null || _session!.status != 'planned') return false;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final planDate = DateTime(
+      _session!.startTime.year,
+      _session!.startTime.month,
+      _session!.startTime.day,
+    );
+    return planDate == today;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading || _session == null) {
@@ -92,6 +106,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
 
     final isPlanned = _session!.status == 'planned';
     final isCompleted = _session!.status == 'completed';
+    final isTodayPlan = _isTodayPlan(); // ✅ 判断是否是今天的计划
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -132,11 +147,16 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
       ),
       resizeToAvoidBottomInset: false,
       body: Stack(
-        // ✅ 使用 Stack 替代 floatingActionButton
         children: [
           ListView(
             controller: _scrollController,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              // ✅ 根据按钮数量调整底部padding
+              isTodayPlan && !_isEditing ? 140 : 80,
+            ),
             children: [
               _buildHeaderCard(),
               const SizedBox(height: 20),
@@ -217,75 +237,170 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                 }),
             ],
           ),
-          // ✅ 底部按钮使用 Positioned
+          // ✅ 底部按钮区域
           Positioned(
             left: 16,
             right: 16,
             bottom: 16,
-            child: Row(
-              children: [
-                if (isPlanned && _isEditing)
-                  Expanded(
-                    child: SizedBox(
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        onPressed: _addExercise,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4F75FF),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 4,
-                        ),
-                        icon: const Icon(Icons.add, color: Colors.white),
-                        label: const Text(
-                          "添加动作",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                if (isPlanned && _isEditing) const SizedBox(width: 12),
-                Expanded(
-                  child: SizedBox(
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: _deletePlan,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 4,
-                      ),
-                      icon: const Icon(
-                        Icons.delete_outline,
-                        color: Colors.white,
-                      ),
-                      label: Text(
-                        isPlanned ? "删除计划" : "删除记录",
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            child: _buildBottomButtons(isPlanned, isTodayPlan),
           ),
         ],
       ),
     );
   }
 
-  // ✅ 替换原来的 _buildHeaderCard 方法
+  // ✅ 构建底部按钮
+  Widget _buildBottomButtons(bool isPlanned, bool isTodayPlan) {
+    // 编辑模式：显示添加动作和删除按钮
+    if (isPlanned && _isEditing) {
+      return Row(
+        children: [
+          Expanded(
+            child: SizedBox(
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: _addExercise,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4F75FF),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 4,
+                ),
+                icon: const Icon(Icons.add, color: Colors.white),
+                label: const Text(
+                  "添加动作",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: SizedBox(
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: _deletePlan,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 4,
+                ),
+                icon: const Icon(Icons.delete_outline, color: Colors.white),
+                label: const Text(
+                  "删除计划",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // ✅ 今天的计划：显示开始训练和删除按钮
+    if (isTodayPlan) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 第一行：开始训练和删除按钮（各占一半）
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: _startWorkout,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 4,
+                    ),
+                    icon: const Icon(
+                      Icons.play_arrow,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                    label: const Text(
+                      "开始训练",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SizedBox(
+                  height: 56,
+                  child: OutlinedButton.icon(
+                    onPressed: _deletePlan,
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      side: const BorderSide(color: Colors.redAccent, width: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    icon: const Icon(Icons.delete_outline, size: 24, color: Colors.white),
+                    label: const Text(
+                      "删除",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    // ✅ 其他情况（非今天的计划或已完成的记录）：只显示删除按钮
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: ElevatedButton.icon(
+        onPressed: _deletePlan,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.redAccent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 4,
+        ),
+        icon: const Icon(Icons.delete_outline, color: Colors.white),
+        label: Text(
+          isPlanned ? "删除计划" : "删除记录",
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildHeaderCard() {
     final isCompleted = _session!.status == 'completed';
     final isPlanned = _session!.status == 'planned';
@@ -295,7 +410,6 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
       'zh_CN',
     ).format(_session!.startTime);
 
-    // 构建统计项列表
     final List<DetailStatItem> stats = [
       DetailStatItem(
         icon: Icons.fitness_center,
@@ -305,7 +419,6 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
       ),
     ];
 
-    // 如果是已完成状态，添加容量和时长统计
     if (isCompleted) {
       stats.addAll([
         DetailStatItem(
@@ -449,6 +562,21 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
           ),
         );
       }
+    }
+  }
+
+  // ✅ 开始训练方法
+  void _startWorkout() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WorkoutSessionScreen(sessionId: _session!.id),
+      ),
+    );
+
+    if (result == true) {
+      // 训练完成后返回首页
+      Navigator.pop(context, true);
     }
   }
 }
