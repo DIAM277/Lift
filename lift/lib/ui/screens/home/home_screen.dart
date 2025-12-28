@@ -29,18 +29,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadData() async {
     final isar = await IsarService().db;
     final now = DateTime.now();
-    // 修复：使用准确的今天开始和结束时间
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    // 查找今天的训练计划
     final todayPlans = await isar.workoutSessions
         .filter()
         .startTimeBetween(today, tomorrow)
         .statusEqualTo('planned')
         .findAll();
 
-    // 查找最近的训练记录（已完成的）- 最多5条
     final recentCompleted = await isar.workoutSessions
         .filter()
         .statusEqualTo('completed')
@@ -67,102 +64,99 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _loadData,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // 欢迎标题
-              _buildWelcomeHeader(),
-              const SizedBox(height: 24),
-
-              // 今日训练卡片
-              _buildTodayTrainingCard(),
-              const SizedBox(height: 20),
-
-              // 快速统计
-              _buildQuickStats(),
-              const SizedBox(height: 20),
-
-              // 最近训练记录标题和按钮
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Stack(
+          // ✅ 使用 Stack 替代 floatingActionButton
+          children: [
+            RefreshIndicator(
+              onRefresh: _loadData,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Text(
-                      "最近训练",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                  ),
-                  if (_recentSessions.isNotEmpty)
-                    TextButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const WorkoutHistoryScreen(),
+                  _buildWelcomeHeader(),
+                  const SizedBox(height: 24),
+                  _buildTodayTrainingCard(),
+                  const SizedBox(height: 20),
+                  _buildQuickStats(),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Text(
+                          "最近训练",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[800],
                           ),
-                        );
-                      },
-                      icon: const Icon(Icons.history, size: 18),
-                      label: const Text(
-                        "查看所有记录",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF4F75FF),
-                      ),
-                    ),
+                      if (_recentSessions.isNotEmpty)
+                        TextButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const WorkoutHistoryScreen(),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.history, size: 18),
+                          label: const Text(
+                            "查看所有记录",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFF4F75FF),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _buildRecentSessions(),
+                  const SizedBox(height: 80),
                 ],
               ),
-              const SizedBox(height: 12),
-
-              // 最近训练记录
-              _buildRecentSessions(),
-
-              // 底部留出空间给按钮
-              const SizedBox(height: 80),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton.icon(
-            onPressed: _handleStartWorkout,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4F75FF),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 4,
             ),
-            icon: Icon(
-              _todayPlan != null ? Icons.play_arrow : Icons.add,
-              color: Colors.white,
-              size: 28,
-            ),
-            label: Text(
-              _todayPlan != null ? "开始训练" : "创建今日计划",
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            // ✅ 底部按钮使用 Positioned
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 16,
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: _handleStartWorkout,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4F75FF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 4,
+                  ),
+                  icon: Icon(
+                    _todayPlan != null ? Icons.play_arrow : Icons.add,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                  label: Text(
+                    _todayPlan != null ? "开始训练" : "创建今日计划",
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -205,7 +199,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return InkWell(
       onTap: () async {
         if (hasPlan) {
-          // 有计划，跳转到计划详情
           final result = await Navigator.push(
             context,
             MaterialPageRoute(
@@ -216,7 +209,6 @@ class _HomeScreenState extends State<HomeScreen> {
             _loadData();
           }
         } else {
-          // 没有计划，跳转到添加计划页面
           final now = DateTime.now();
           final today = DateTime(now.year, now.month, now.day);
           final result = await Navigator.push(
@@ -279,7 +271,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const Spacer(),
-                // 添加一个提示图标
                 if (!hasPlan)
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -322,18 +313,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 16), // 删除了"1 个动作"文字，增加间距
+              const SizedBox(height: 16),
               Row(
                 children: [
                   _buildPlanBadge(
                     Icons.fitness_center,
-                    "${_todayPlan!.exercises.length} 个动作", // 添加文字说明
+                    "${_todayPlan!.exercises.length} 个动作",
                   ),
                   const SizedBox(width: 8),
-                  _buildPlanBadge(
-                    Icons.timer,
-                    "约 ${_estimateDuration()} 分钟", // 优化文案
-                  ),
+                  _buildPlanBadge(Icons.timer, "约 ${_estimateDuration()} 分钟"),
                 ],
               ),
             ] else ...[
@@ -360,7 +348,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              // 添加一些装饰性图标
               Row(
                 children: [
                   _buildEmptyPlanBadge(Icons.fitness_center, "选择动作"),
@@ -388,7 +375,7 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 16, color: Colors.white),
-          const SizedBox(width: 6), // 增加图标和文字间距
+          const SizedBox(width: 6),
           Text(
             text,
             style: const TextStyle(
@@ -430,7 +417,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _estimateDuration() {
     if (_todayPlan == null) return "0";
-    // 简单估算：每个动作约10分钟
     return (_todayPlan!.exercises.length * 10).toString();
   }
 
@@ -595,14 +581,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             onTap: () async {
-              // 添加点击跳转到详情页面
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => PlanDetailScreen(sessionId: session.id),
                 ),
               );
-              // 如果有修改，刷新数据
               if (result == true) {
                 _loadData();
               }
@@ -615,7 +599,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _handleStartWorkout() async {
     if (_todayPlan != null) {
-      // 有计划，开始训练
       final result = await Navigator.push(
         context,
         MaterialPageRoute(
@@ -623,12 +606,10 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
-      // 训练完成后刷新数据
       if (result == true) {
         _loadData();
       }
     } else {
-      // 没有计划，跳转到添加计划页面
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
@@ -639,7 +620,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
-      // 添加计划后刷新数据
       if (result == true) {
         _loadData();
       }

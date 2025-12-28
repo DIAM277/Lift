@@ -131,149 +131,156 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
         ],
       ),
       resizeToAvoidBottomInset: false,
-      body: ListView(
-        controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+      body: Stack(
+        // ✅ 使用 Stack 替代 floatingActionButton
         children: [
-          // 头部信息卡片 - 使用通用组件
-          _buildHeaderCard(),
-          const SizedBox(height: 20),
-
-          // 动作列表标题
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 12),
+          ListView(
+            controller: _scrollController,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+            children: [
+              _buildHeaderCard(),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 12),
+                child: Row(
+                  children: [
+                    Text(
+                      "动作列表",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4F75FF).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        "${_session!.exercises.length}",
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF4F75FF),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_session!.exercises.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.fitness_center,
+                        size: 48,
+                        color: Colors.grey[300],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "还没有添加动作",
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ..._session!.exercises.asMap().entries.map((entry) {
+                  return ExerciseCard<WorkoutSessionLog>(
+                    key: ValueKey('session_${entry.key}'),
+                    index: entry.key,
+                    exercise: entry.value,
+                    isEditable: isPlanned && _isEditing,
+                    showBodyweightToggle: true,
+                    showVolume: isCompleted,
+                    onRemove: () {
+                      setState(() {
+                        _session!.exercises.removeAt(entry.key);
+                      });
+                    },
+                    onChanged: () {
+                      setState(() {});
+                    },
+                  );
+                }),
+            ],
+          ),
+          // ✅ 底部按钮使用 Positioned
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 16,
             child: Row(
               children: [
-                Text(
-                  "动作列表",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
+                if (isPlanned && _isEditing)
+                  Expanded(
+                    child: SizedBox(
+                      height: 50,
+                      child: ElevatedButton.icon(
+                        onPressed: _addExercise,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4F75FF),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 4,
+                        ),
+                        icon: const Icon(Icons.add, color: Colors.white),
+                        label: const Text(
+                          "添加动作",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF4F75FF).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    "${_session!.exercises.length}",
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF4F75FF),
+                if (isPlanned && _isEditing) const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: _deletePlan,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 4,
+                      ),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.white,
+                      ),
+                      label: Text(
+                        isPlanned ? "删除计划" : "删除记录",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-
-          // 使用通用动作卡片组件
-          if (_session!.exercises.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  Icon(Icons.fitness_center, size: 48, color: Colors.grey[300]),
-                  const SizedBox(height: 12),
-                  Text(
-                    "还没有添加动作",
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            )
-          else
-            ..._session!.exercises.asMap().entries.map((entry) {
-              return ExerciseCard<WorkoutSessionLog>(
-                key: ValueKey('session_${entry.key}'),
-                index: entry.key,
-                exercise: entry.value,
-                isEditable: isPlanned && _isEditing,
-                showBodyweightToggle: true,
-                showVolume: isCompleted,
-                onRemove: () {
-                  setState(() {
-                    _session!.exercises.removeAt(entry.key);
-                  });
-                },
-                onChanged: () {
-                  setState(() {});
-                },
-              );
-            }),
         ],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            if (isPlanned && _isEditing)
-              Expanded(
-                child: SizedBox(
-                  height: 50,
-                  child: ElevatedButton.icon(
-                    onPressed: _addExercise,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4F75FF),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 4,
-                    ),
-                    icon: const Icon(Icons.add, color: Colors.white),
-                    label: const Text(
-                      "添加动作",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-            if (isPlanned && _isEditing) const SizedBox(width: 12),
-
-            Expanded(
-              child: SizedBox(
-                height: 50,
-                child: ElevatedButton.icon(
-                  onPressed: _deletePlan,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 4,
-                  ),
-                  icon: const Icon(Icons.delete_outline, color: Colors.white),
-                  label: Text(
-                    isPlanned ? "删除计划" : "删除记录",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
