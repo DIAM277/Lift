@@ -12,6 +12,10 @@ void main() async {
   final isarService = IsarService();
   await isarService.db;
   await initializeDateFormatting('zh_CN', null);
+
+  // 临时测试：清空数据
+  // await IsarService().cleanDb();
+
   runApp(const ProviderScope(child: MyApp()));
 }
 
