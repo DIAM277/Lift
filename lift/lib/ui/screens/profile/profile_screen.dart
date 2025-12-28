@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
+import 'package:lift/ui/screens/profile/export_data_screen.dart';
 import '../../../data/isar_service.dart';
 import '../../../data/models/workout.dart';
 
@@ -104,7 +105,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title: "导出数据",
                   subtitle: "导出为CSV或JSON",
                   onTap: () {
-                    _showComingSoonDialog("导出数据");
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ExportDataScreen(),
+                      ),
+                    );
                   },
                 ),
               ]),

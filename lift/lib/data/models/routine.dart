@@ -10,6 +10,8 @@ class WorkoutRoutine {
 
   // 这个组合里包含哪些动作？
   List<RoutineExercise> exercises = [];
+
+  get description => null;
 }
 
 // 组合里的某个动作（预设模版）
