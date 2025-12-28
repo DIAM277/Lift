@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
+import 'package:intl/intl.dart';
 import '../../../data/isar_service.dart';
 import '../../../data/models/workout.dart';
 import '../../../data/models/routine.dart';
@@ -18,12 +19,79 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
   final TextEditingController _nameController = TextEditingController();
   final List<WorkoutSessionLog> _exercises = [];
   final ScrollController _scrollController = ScrollController();
+  late DateTime _selectedDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = widget.selectedDate;
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  // 显示日期选择器
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      // 使用系统默认语言
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF4F75FF),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+            dialogBackgroundColor: Colors.white,
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
+  // 格式化日期显示
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+    final dateOnly = DateTime(date.year, date.month, date.day);
+
+    if (dateOnly == today) {
+      return "今天";
+    } else if (dateOnly == tomorrow) {
+      return "明天";
+    } else {
+      return DateFormat('MM月dd日 EEEE', 'zh_CN').format(date);
+    }
+  }
+
+  // 获取日期颜色（今天用蓝色，其他用橙色）
+  Color _getDateColor() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dateOnly = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+    );
+
+    return dateOnly == today ? const Color(0xFF4F75FF) : Colors.orangeAccent;
   }
 
   @override
@@ -52,7 +120,7 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
         controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
         children: [
-          // 计划名称输入卡片
+          // ✅ 计划信息卡片（包含日期选择）
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -74,12 +142,12 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.orangeAccent.withOpacity(0.1),
+                        color: _getDateColor().withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
-                        Icons.schedule,
-                        color: Colors.orangeAccent,
+                      child: Icon(
+                        Icons.calendar_today,
+                        color: _getDateColor(),
                         size: 20,
                       ),
                     ),
@@ -95,6 +163,90 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
+
+                // ✅ 日期选择按钮
+                InkWell(
+                  onTap: _selectDate,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _getDateColor().withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _getDateColor().withOpacity(0.3),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.event, color: _getDateColor(), size: 24),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "训练日期",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _formatDate(_selectedDate),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: _getDateColor(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "修改",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: _getDateColor(),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.edit_calendar,
+                                size: 14,
+                                color: _getDateColor(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // 计划名称输入
+                Text(
+                  "计划名称",
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -107,7 +259,7 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
                   child: TextField(
                     controller: _nameController,
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                       height: 1.2,
                     ),
@@ -123,6 +275,43 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
             ),
           ),
           const SizedBox(height: 20),
+
+          // 动作列表标题
+          if (_exercises.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 12),
+              child: Row(
+                children: [
+                  Text(
+                    "动作列表",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4F75FF).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      "${_exercises.length}",
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF4F75FF),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
           // 使用通用动作卡片组件
           ..._exercises.asMap().entries.map((entry) {
@@ -143,6 +332,43 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
               },
             );
           }),
+
+          // ✅ 空状态提示
+          if (_exercises.isEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 20),
+              padding: const EdgeInsets.all(40),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.fitness_center, size: 64, color: Colors.grey[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    "还没有添加动作",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "点击下方按钮添加动作或导入组合",
+                    style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -252,6 +478,7 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
           "选择动作组合",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView.separated(
@@ -362,8 +589,9 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
     }
 
     final isar = await IsarService().db;
+    // ✅ 使用用户选择的日期
     final session = WorkoutSession()
-      ..startTime = widget.selectedDate
+      ..startTime = _selectedDate
       ..status = 'planned'
       ..note = _nameController.text
       ..exercises = _exercises;
@@ -374,6 +602,12 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
 
     if (mounted) {
       Navigator.pop(context, true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('已为 ${_formatDate(_selectedDate)} 创建训练计划'),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
   }
 }

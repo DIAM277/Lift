@@ -81,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Padding(
                     padding: const EdgeInsets.only(left: 4),
                     child: Text(
-                      "最近训练",
+                      "近5次训练",
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

@@ -57,7 +57,7 @@ class _MainScreenState extends State<MainScreen> {
               _buildNavItem(
                 icon: Icons.fitness_center_outlined,
                 activeIcon: Icons.fitness_center,
-                label: '动作组合',
+                label: '动作',
                 index: 1,
               ),
               _buildCenterButton(),
