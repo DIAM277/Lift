@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../data/isar_service.dart';
@@ -18,11 +19,19 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   bool _isLoading = true;
   bool _showRestTimer = false;
   DateTime? _startTime;
+  Timer? _elapsedTimer;
+  int _elapsedSeconds = 0;
 
   @override
   void initState() {
     super.initState();
     _loadSession();
+  }
+
+  @override
+  void dispose() {
+    _elapsedTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadSession() async {
@@ -35,11 +44,22 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
         _startTime = DateTime.now();
         _isLoading = false;
       });
+      _startElapsedTimer();
     } else {
       if (mounted) {
         Navigator.pop(context);
       }
     }
+  }
+
+  void _startElapsedTimer() {
+    _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          _elapsedSeconds = DateTime.now().difference(_startTime!).inSeconds;
+        });
+      }
+    });
   }
 
   // 检查是否所有组都已完成
@@ -164,7 +184,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
               // 动作列表
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                   itemCount: _session!.exercises.length,
                   itemBuilder: (context, index) {
                     return _buildExerciseCard(
@@ -178,10 +198,10 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
           ),
           floatingActionButtonLocation:
               FloatingActionButtonLocation.centerFloat,
-          floatingActionButton: _isAllCompleted()
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SizedBox(
+          floatingActionButton: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _isAllCompleted()
+                ? SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton.icon(
@@ -203,9 +223,47 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
                         ),
                       ),
                     ),
+                  )
+                : SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: GestureDetector(
+                      onLongPress: () => _showForceEndDialog(),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[400],
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.stop_circle_outlined,
+                              color: Colors.grey[700],
+                              size: 24,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "长按结束锻炼",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                )
-              : null,
+          ),
         ),
 
         // 休息计时器覆盖层
@@ -239,10 +297,15 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   }
 
   String _getElapsedTime() {
-    if (_startTime == null) return "0分钟";
-    final duration = DateTime.now().difference(_startTime!);
-    final minutes = duration.inMinutes;
-    return "${minutes}分钟";
+    final hours = _elapsedSeconds ~/ 3600;
+    final minutes = (_elapsedSeconds % 3600) ~/ 60;
+    final seconds = _elapsedSeconds % 60;
+
+    if (hours > 0) {
+      return "${hours}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}";
+    } else {
+      return "${minutes}:${seconds.toString().padLeft(2, '0')}";
+    }
   }
 
   Widget _buildExerciseCard(WorkoutSessionLog exercise, int exerciseIndex) {
@@ -363,7 +426,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
       decoration: BoxDecoration(
         color: set.isCompleted
             ? Colors.green.withOpacity(0.1)
@@ -373,7 +436,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
       child: Row(
         children: [
           SizedBox(
-            width: 50,
+            width: 42,
             child: Text(
               "${setIndex + 1}",
               style: TextStyle(
@@ -389,28 +452,38 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
+                color: set.isCompleted ? Colors.white : const Color(0xFFF5F7FA),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: TextFormField(
-                initialValue: set.weight
-                    .toStringAsFixed(1)
-                    .replaceAll(".0", ""),
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                enabled: !set.isCompleted,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                onChanged: (val) {
-                  set.weight = double.tryParse(val) ?? 0;
-                  setState(() {});
-                },
+              child: Center(
+                child: set.isCompleted
+                    ? Text(
+                        set.weight.toStringAsFixed(1).replaceAll(".0", ""),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      )
+                    : TextFormField(
+                        initialValue: set.weight
+                            .toStringAsFixed(1)
+                            .replaceAll(".0", ""),
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        onChanged: (val) {
+                          set.weight = double.tryParse(val) ?? 0;
+                          setState(() {});
+                        },
+                      ),
               ),
             ),
           ),
@@ -420,26 +493,36 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
+                color: set.isCompleted ? Colors.white : const Color(0xFFF5F7FA),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: TextFormField(
-                initialValue: set.reps.toString(),
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                enabled: !set.isCompleted,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                onChanged: (val) {
-                  set.reps = int.tryParse(val) ?? 0;
-                  setState(() {});
-                },
+              child: Center(
+                child: set.isCompleted
+                    ? Text(
+                        set.reps.toString(),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      )
+                    : TextFormField(
+                        initialValue: set.reps.toString(),
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        onChanged: (val) {
+                          set.reps = int.tryParse(val) ?? 0;
+                          setState(() {});
+                        },
+                      ),
               ),
             ),
           ),
@@ -540,9 +623,37 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     );
   }
 
+  void _showForceEndDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          "提前结束训练",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text("确定要结束训练吗？已完成的组将被保存为训练记录。"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("继续训练"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _completeWorkout();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+            child: const Text("结束训练"),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _completeWorkout() async {
     final endTime = DateTime.now();
-    final duration = endTime.difference(_startTime!).inMinutes;
+    final duration = (_elapsedSeconds / 60).ceil();
 
     setState(() {
       _session!.endTime = endTime;

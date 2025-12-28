@@ -5,6 +5,8 @@ import '../../data/isar_service.dart';
 import '../../data/models/workout.dart';
 import 'workout_session_screen.dart';
 import 'add_plan_screen.dart';
+import 'workout_history_screen.dart';
+import 'plan_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -38,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
         .statusEqualTo('planned')
         .findAll();
 
-    // 查找最近的训练记录（已完成的）
+    // 查找最近的训练记录（已完成的）- 最多5条
     final recentCompleted = await isar.workoutSessions
         .filter()
         .statusEqualTo('completed')
@@ -81,6 +83,47 @@ class _HomeScreenState extends State<HomeScreen> {
               // 快速统计
               _buildQuickStats(),
               const SizedBox(height: 20),
+
+              // 最近训练记录标题和按钮
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: Text(
+                      "最近训练",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                  ),
+                  if (_recentSessions.isNotEmpty)
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const WorkoutHistoryScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.history, size: 18),
+                      label: const Text(
+                        "查看所有记录",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF4F75FF),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
 
               // 最近训练记录
               _buildRecentSessions(),
@@ -391,86 +434,82 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 12),
-          child: Text(
-            "最近训练",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
-            ),
+      children: _recentSessions.map((session) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ),
-        ...(_recentSessions.take(3).map((session) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.check_circle,
+                color: Colors.green,
+                size: 24,
+              ),
+            ),
+            title: Text(
+              session.note ?? "训练",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                DateFormat('MM月dd日 HH:mm', 'zh_CN').format(session.startTime),
+                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              ),
+            ),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  "${session.totalVolume.toInt()}kg",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF4F75FF),
+                  ),
+                ),
+                Text(
+                  "${session.duration}分钟",
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                 ),
               ],
             ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+            onTap: () async {
+              // 添加点击跳转到详情页面
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PlanDetailScreen(sessionId: session.id),
                 ),
-                child: const Icon(
-                  Icons.check_circle,
-                  color: Colors.green,
-                  size: 24,
-                ),
-              ),
-              title: Text(
-                session.note ?? "训练",
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  DateFormat('MM月dd日 HH:mm', 'zh_CN').format(session.startTime),
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-                ),
-              ),
-              trailing: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    "${session.totalVolume.toInt()}kg",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF4F75FF),
-                    ),
-                  ),
-                  Text(
-                    "${session.duration}分钟",
-                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList()),
-      ],
+              );
+              // 如果有修改，刷新数据
+              if (result == true) {
+                _loadData();
+              }
+            },
+          ),
+        );
+      }).toList(),
     );
   }
 

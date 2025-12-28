@@ -87,38 +87,46 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          Container(
-            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(monthlyWorkoutsProvider(_focusedDay));
+          ref.invalidate(dailyWorkoutsProvider(_selectedDay ?? _focusedDay));
+          await Future.delayed(const Duration(milliseconds: 500));
+        },
+        child: ListView(
+          children: [
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: workoutsAsync.when(
+                data: (workouts) => _buildCalendar(workouts),
+                loading: () => const SizedBox(
+                  height: 400,
+                  child: Center(child: CircularProgressIndicator()),
                 ),
-              ],
+                error: (err, stack) => Center(child: Text('加载失败: $err')),
+              ),
             ),
-            child: workoutsAsync.when(
-              data: (workouts) => _buildCalendar(workouts),
+            selectedDayWorkoutsAsync.when(
+              data: (workouts) => _buildDayWorkoutsList(workouts),
               loading: () => const SizedBox(
-                height: 400,
+                height: 200,
                 child: Center(child: CircularProgressIndicator()),
               ),
               error: (err, stack) => Center(child: Text('加载失败: $err')),
             ),
-          ),
-          Expanded(
-            child: selectedDayWorkoutsAsync.when(
-              data: (workouts) => _buildDayWorkoutsList(workouts),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(child: Text('加载失败: $err')),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: _isSelectedDayTodayOrFuture()
@@ -276,56 +284,71 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   Widget _buildDayWorkoutsList(List<WorkoutSession> workouts) {
     if (workouts.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.fitness_center, size: 48, color: Colors.grey[300]),
-            const SizedBox(height: 16),
-            Text(
-              _isSelectedDayTodayOrFuture() ? "还没有训练计划\n点击下方按钮添加" : "这天还没有训练记录",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[400], fontSize: 16),
-            ),
-          ],
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 100), // 添加底部内边距
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 60), // 添加顶部间距
+              Icon(Icons.fitness_center, size: 48, color: Colors.grey[300]),
+              const SizedBox(height: 16),
+              Text(
+                _isSelectedDayTodayOrFuture()
+                    ? "还没有训练计划\n点击下方按钮添加"
+                    : "这天还没有训练记录",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[400], fontSize: 16),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     final dateStr = DateFormat('MM月dd日', 'zh_CN').format(_selectedDay!);
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12, top: 8),
-          child: Text(
-            dateStr,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100), // 增加底部内边距到100
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12, top: 8, left: 4),
+            child: Text(
+              dateStr,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
+              ),
+            ),
           ),
-        ),
-        ...workouts.map((workout) => _buildWorkoutCard(workout)),
-      ],
+          ...workouts.map((workout) => _buildWorkoutCard(workout)),
+        ],
+      ),
     );
   }
 
   Widget _buildWorkoutCard(WorkoutSession session) {
-    final duration = session.endTime != null
-        ? session.endTime!.difference(session.startTime).inMinutes
-        : 0;
+    final isCompleted = session.status == 'completed';
+    final isPlanned = session.status == 'planned';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: session.status == 'planned'
-            ? Border.all(color: Colors.orangeAccent, width: 2)
-            : null,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: InkWell(
         onTap: () async {
-          // 关键修改：传递 session.id 而不是 session 对象
           final result = await Navigator.push(
             context,
             MaterialPageRoute(
@@ -333,78 +356,114 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             ),
           );
           if (result == true) {
-            // 刷新数据
             ref.invalidate(dailyWorkoutsProvider(_selectedDay!));
             ref.invalidate(monthlyWorkoutsProvider(_focusedDay));
           }
         },
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 4,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: session.status == 'completed'
-                      ? const Color(0xFF4F75FF)
-                      : Colors.orangeAccent,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: (isCompleted ? Colors.green : Colors.orange)
+                          .withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      isCompleted ? Icons.check_circle : Icons.schedule,
+                      color: isCompleted ? Colors.green : Colors.orange,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           session.note ?? "训练记录",
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 17,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        if (session.status == 'planned')
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.orangeAccent.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              "计划中",
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.orangeAccent,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isPlanned ? "计划中" : "已完成",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: (isCompleted ? Colors.green : Colors.orange),
+                            fontWeight: FontWeight.w600,
                           ),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      session.status == 'completed'
-                          ? "总容量: ${session.totalVolume.toInt()}kg | 时长: ${duration}min"
-                          : "${session.exercises.length} 个动作",
-                      style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Colors.grey,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _buildInfoChip(
+                    Icons.fitness_center,
+                    "${session.exercises.length} 个动作",
+                    const Color(0xFF4F75FF),
+                  ),
+                  if (isCompleted) ...[
+                    const SizedBox(width: 8),
+                    _buildInfoChip(
+                      Icons.monitor_weight,
+                      "${session.totalVolume.toInt()}kg",
+                      Colors.orange,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildInfoChip(
+                      Icons.timer_outlined,
+                      "${session.duration}分钟",
+                      Colors.green,
                     ),
                   ],
-                ),
+                ],
               ),
-
-              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(IconData icon, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
