@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:isar/isar.dart';
 import '../../data/isar_service.dart';
 import '../../data/models/routine.dart';
-import 'package:isar/isar.dart';
-import 'create_routine_screen.dart'; // 引入刚才建的新建页
+import 'create_routine_screen.dart';
+import 'routine_detail_screen.dart'; // 导入详情页面
 
 class ExerciseLibraryScreen extends StatefulWidget {
   const ExerciseLibraryScreen({super.key});
@@ -12,7 +13,6 @@ class ExerciseLibraryScreen extends StatefulWidget {
 }
 
 class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
-  // 简单的获取所有 Routines
   Future<List<WorkoutRoutine>> _loadRoutines() async {
     final isar = await IsarService().db;
     return await isar.workoutRoutines.where().findAll();
@@ -33,35 +33,70 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
       body: FutureBuilder<List<WorkoutRoutine>>(
         future: _loadRoutines(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
           final routines = snapshot.data!;
 
           if (routines.isEmpty) {
-            return const Center(
-              child: Text(
-                "还没有创建任何组合\n点击下方 + 号创建一个吧",
-                textAlign: TextAlign.center,
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.fitness_center, size: 64, color: Colors.grey[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    "还没有创建任何组合",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "点击下方按钮创建一个吧",
+                    style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+                  ),
+                ],
               ),
             );
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
             itemCount: routines.length,
             itemBuilder: (context, index) {
               final routine = routines[index];
-              return Card(
-                elevation: 0,
-                color: Colors.white,
+              return Container(
                 margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(
+                decoration: BoxDecoration(
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 20,
-                    vertical: 8,
+                    vertical: 12,
+                  ),
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4F75FF).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.fitness_center,
+                      color: Color(0xFF4F75FF),
+                      size: 24,
+                    ),
                   ),
                   title: Text(
                     routine.name,
@@ -70,17 +105,31 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                       fontSize: 18,
                     ),
                   ),
-                  subtitle: Text(
-                    "${routine.exercises.length} 个动作",
-                    style: TextStyle(color: Colors.grey[500]),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      "${routine.exercises.length} 个动作",
+                      style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                    ),
                   ),
                   trailing: const Icon(
                     Icons.arrow_forward_ios,
                     size: 16,
                     color: Colors.grey,
                   ),
-                  onTap: () {
-                    // TODO: 这里将来点击是 "使用该组合开始训练"
+                  onTap: () async {
+                    // 跳转到详情页面
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            RoutineDetailScreen(routineId: routine.id),
+                      ),
+                    );
+                    // 如果有修改，刷新列表
+                    if (result == true) {
+                      setState(() {});
+                    }
                   },
                 ),
               );
@@ -88,7 +137,6 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
           );
         },
       ),
-      // 悬浮按钮：新建组合
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -103,7 +151,7 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                   builder: (context) => const CreateRoutineScreen(),
                 ),
               );
-              setState(() {}); // 刷新列表
+              setState(() {});
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4F75FF),

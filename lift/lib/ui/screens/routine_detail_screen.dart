@@ -1,47 +1,46 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import '../../data/models/workout.dart';
 import '../../data/isar_service.dart';
+import '../../data/models/routine.dart';
 import '../widgets/exercise_card.dart';
 
-class PlanDetailScreen extends StatefulWidget {
-  final int sessionId;
+class RoutineDetailScreen extends StatefulWidget {
+  final int routineId;
 
-  const PlanDetailScreen({super.key, required this.sessionId});
+  const RoutineDetailScreen({super.key, required this.routineId});
 
   @override
-  State<PlanDetailScreen> createState() => _PlanDetailScreenState();
+  State<RoutineDetailScreen> createState() => _RoutineDetailScreenState();
 }
 
-class _PlanDetailScreenState extends State<PlanDetailScreen> {
-  WorkoutSession? _session;
+class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
+  WorkoutRoutine? _routine;
   bool _isEditing = false;
   bool _isLoading = true;
-  late TextEditingController _noteController;
+  late TextEditingController _nameController;
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _noteController = TextEditingController();
-    _loadSession();
+    _nameController = TextEditingController();
+    _loadRoutine();
   }
 
   @override
   void dispose() {
-    _noteController.dispose();
+    _nameController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadSession() async {
+  Future<void> _loadRoutine() async {
     final isar = await IsarService().db;
-    final session = await isar.workoutSessions.get(widget.sessionId);
+    final routine = await isar.workoutRoutines.get(widget.routineId);
 
-    if (session != null) {
+    if (routine != null) {
       setState(() {
-        _session = _deepCopySession(session);
-        _noteController.text = _session!.note ?? "";
+        _routine = _deepCopyRoutine(routine);
+        _nameController.text = _routine!.name;
         _isLoading = false;
       });
     } else {
@@ -51,24 +50,19 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
     }
   }
 
-  WorkoutSession _deepCopySession(WorkoutSession original) {
-    final copy = WorkoutSession()
+  WorkoutRoutine _deepCopyRoutine(WorkoutRoutine original) {
+    final copy = WorkoutRoutine()
       ..id = original.id
-      ..startTime = original.startTime
-      ..endTime = original.endTime
-      ..note = original.note
-      ..totalVolume = original.totalVolume
-      ..duration = original.duration
-      ..status = original.status
+      ..name = original.name
       ..exercises = original.exercises.map((exercise) {
-        return WorkoutSessionLog()
+        return RoutineExercise()
           ..exerciseName = exercise.exerciseName
-          ..targetPart = exercise.targetPart
+          //..targetPart = exercise.targetPart
+          ..isBodyweight = exercise.isBodyweight
           ..sets = exercise.sets.map((set) {
-            return WorkoutSet()
+            return RoutineSet()
               ..weight = set.weight
-              ..reps = set.reps
-              ..isCompleted = set.isCompleted;
+              ..reps = set.reps;
           }).toList();
       }).toList();
 
@@ -77,7 +71,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading || _session == null) {
+    if (_isLoading || _routine == null) {
       return Scaffold(
         backgroundColor: const Color(0xFFF5F7FA),
         appBar: AppBar(
@@ -89,12 +83,6 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
       );
     }
 
-    final dateStr = DateFormat(
-      'yyyy年MM月dd日',
-      'zh_CN',
-    ).format(_session!.startTime);
-    final isPlanned = _session!.status == 'planned';
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
@@ -104,32 +92,28 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
             Navigator.pop(context, true);
           },
         ),
-        title: Text(
-          isPlanned ? "训练计划" : "训练记录",
-          style: const TextStyle(fontWeight: FontWeight.bold),
+        title: const Text(
+          "动作组合详情",
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
-          if (isPlanned)
-            TextButton(
-              onPressed: () {
-                if (_isEditing) {
-                  _updatePlan();
-                } else {
-                  setState(() {
-                    _isEditing = true;
-                  });
-                }
-              },
-              child: Text(
-                _isEditing ? "保存" : "编辑",
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
+          TextButton(
+            onPressed: () {
+              if (_isEditing) {
+                _updateRoutine();
+              } else {
+                setState(() {
+                  _isEditing = true;
+                });
+              }
+            },
+            child: Text(
+              _isEditing ? "保存" : "编辑",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
+          ),
         ],
       ),
       resizeToAvoidBottomInset: false,
@@ -137,7 +121,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
         controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
         children: [
-          // 头部信息卡片
+          // 组合名称卡片
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -159,22 +143,18 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: isPlanned
-                            ? Colors.orangeAccent.withOpacity(0.1)
-                            : const Color(0xFF4F75FF).withOpacity(0.1),
+                        color: const Color(0xFF4F75FF).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(
-                        isPlanned ? Icons.schedule : Icons.check_circle,
-                        color: isPlanned
-                            ? Colors.orangeAccent
-                            : const Color(0xFF4F75FF),
+                      child: const Icon(
+                        Icons.fitness_center,
+                        color: Color(0xFF4F75FF),
                         size: 20,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      dateStr,
+                      "动作组合信息",
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[600],
@@ -185,8 +165,8 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // 计划名称 - 可编辑
-                if (_isEditing && isPlanned)
+                // 组合名称 - 可编辑
+                if (_isEditing)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -197,7 +177,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: TextField(
-                      controller: _noteController,
+                      controller: _nameController,
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -205,18 +185,18 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                       ),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
-                        hintText: "输入计划名称",
+                        hintText: "输入组合名称",
                         contentPadding: EdgeInsets.zero,
                         isDense: true,
                       ),
                       onChanged: (value) {
-                        _session!.note = value;
+                        _routine!.name = value;
                       },
                     ),
                   )
                 else
                   Text(
-                    _session!.note ?? "无备注",
+                    _routine!.name,
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -224,41 +204,34 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                     ),
                   ),
 
-                if (!isPlanned) ...[
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      _buildStatItem(
-                        Icons.fitness_center,
-                        "${_session!.totalVolume.toInt()}kg",
-                        "总容量",
-                      ),
-                      const SizedBox(width: 24),
-                      _buildStatItem(
-                        Icons.timer_outlined,
-                        "${_session!.duration}min",
-                        "时长",
-                      ),
-                    ],
-                  ),
-                ],
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(Icons.list_alt, size: 16, color: Colors.grey[500]),
+                    const SizedBox(width: 6),
+                    Text(
+                      "${_routine!.exercises.length} 个动作",
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
           const SizedBox(height: 20),
 
-          // 使用通用动作卡片组件 - 修正配置
-          ..._session!.exercises.asMap().entries.map((entry) {
-            return ExerciseCard<WorkoutSessionLog>(
-              key: ValueKey('session_${entry.key}'),
+          // 使用通用动作卡片组件
+          ..._routine!.exercises.asMap().entries.map((entry) {
+            return ExerciseCard<RoutineExercise>(
+              key: ValueKey('routine_detail_${entry.key}'),
               index: entry.key,
               exercise: entry.value,
-              isEditable: isPlanned && _isEditing, // 仅计划且在编辑模式下可编辑
+              isEditable: _isEditing,
               showBodyweightToggle: true,
-              showVolume: false, // ✅ 显示容量信息，让卡片更丰富
+              showVolume: false,
               onRemove: () {
                 setState(() {
-                  _session!.exercises.removeAt(entry.key);
+                  _routine!.exercises.removeAt(entry.key);
                 });
               },
               onChanged: () {
@@ -274,7 +247,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
         child: Row(
           children: [
             // 添加动作按钮（仅在编辑状态显示）
-            if (isPlanned && _isEditing)
+            if (_isEditing)
               Expanded(
                 child: SizedBox(
                   height: 50,
@@ -300,14 +273,14 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                 ),
               ),
 
-            if (isPlanned && _isEditing) const SizedBox(width: 12),
+            if (_isEditing) const SizedBox(width: 12),
 
-            // 删除训练计划按钮
+            // 删除组合按钮
             Expanded(
               child: SizedBox(
                 height: 50,
                 child: ElevatedButton.icon(
-                  onPressed: _deletePlan,
+                  onPressed: _deleteRoutine,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent,
                     shape: RoundedRectangleBorder(
@@ -316,9 +289,9 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                     elevation: 4,
                   ),
                   icon: const Icon(Icons.delete_outline, color: Colors.white),
-                  label: Text(
-                    isPlanned ? "删除计划" : "删除记录",
-                    style: const TextStyle(
+                  label: const Text(
+                    "删除组合",
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -333,39 +306,16 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
     );
   }
 
-  Widget _buildStatItem(IconData icon, String value, String label) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: Colors.grey[400]),
-        const SizedBox(width: 6),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              value,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              label,
-              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
   void _addExercise() {
     setState(() {
-      _session!.exercises.add(
-        WorkoutSessionLog()
+      _routine!.exercises.add(
+        RoutineExercise()
           ..exerciseName = "新动作"
-          ..targetPart = ""
+          ..isBodyweight = false
           ..sets = [
-            WorkoutSet()
+            RoutineSet()
               ..weight = 20
-              ..reps = 12
-              ..isCompleted = false,
+              ..reps = 12,
           ],
       );
     });
@@ -381,15 +331,29 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
     });
   }
 
-  void _updatePlan() async {
+  void _updateRoutine() async {
+    if (_routine!.name.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('请输入组合名称')));
+      return;
+    }
+    if (_routine!.exercises.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('请至少添加一个动作')));
+      return;
+    }
+
     final isar = await IsarService().db;
     await isar.writeTxn(() async {
-      await isar.workoutSessions.put(_session!);
+      await isar.workoutRoutines.put(_routine!);
     });
 
     if (mounted) {
       setState(() {
         _isEditing = false;
+        _nameController.text = _routine!.name;
       });
       ScaffoldMessenger.of(
         context,
@@ -397,14 +361,16 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
     }
   }
 
-  void _deletePlan() async {
+  void _deleteRoutine() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("确认删除"),
-        content: Text(
-          _session!.status == 'planned' ? "确定要删除这个训练计划吗?" : "确定要删除这条训练记录吗？",
+        title: const Text(
+          "确认删除",
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
+        content: const Text("确定要删除这个动作组合吗？删除后无法恢复。"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -422,11 +388,14 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
     if (confirmed == true) {
       final isar = await IsarService().db;
       await isar.writeTxn(() async {
-        await isar.workoutSessions.delete(widget.sessionId);
+        await isar.workoutRoutines.delete(widget.routineId);
       });
 
       if (mounted) {
         Navigator.pop(context, true);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('组合已删除')));
       }
     }
   }
