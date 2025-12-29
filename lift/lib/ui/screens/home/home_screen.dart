@@ -18,6 +18,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   WorkoutSession? _todayPlan;
   List<WorkoutSession> _recentSessions = [];
+  List<WorkoutSession> _allWeekSessions = [];
+  List<WorkoutSession> _allMonthSessions = [];
   bool _isLoading = true;
 
   @override
@@ -38,6 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
         .statusEqualTo('planned')
         .findAll();
 
+    // ✅ 加载最近5条用于显示
     final recentCompleted = await isar.workoutSessions
         .filter()
         .statusEqualTo('completed')
@@ -45,9 +48,32 @@ class _HomeScreenState extends State<HomeScreen> {
         .limit(5)
         .findAll();
 
+    // ✅ 加载本月所有数据用于统计
+    final monthStart = DateTime(now.year, now.month, 1);
+    final allMonthSessions = await isar.workoutSessions
+        .filter()
+        .statusEqualTo('completed')
+        .startTimeGreaterThan(monthStart)
+        .findAll();
+
+    // ✅ 加载本周所有数据用于统计
+    final weekStart = now.subtract(Duration(days: now.weekday - 1));
+    final weekStartDate = DateTime(
+      weekStart.year,
+      weekStart.month,
+      weekStart.day,
+    );
+    final allWeekSessions = await isar.workoutSessions
+        .filter()
+        .statusEqualTo('completed')
+        .startTimeGreaterThan(weekStartDate)
+        .findAll();
+
     setState(() {
       _todayPlan = todayPlans.isNotEmpty ? todayPlans.first : null;
       _recentSessions = recentCompleted;
+      _allWeekSessions = allWeekSessions;
+      _allMonthSessions = allMonthSessions;
       _isLoading = false;
     });
   }
@@ -387,20 +413,48 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       children: [
         Expanded(
-          child: _buildStatCard(
-            Icons.calendar_month,
-            "${_getThisWeekCount()}",
-            "本周训练",
-            Colors.orange,
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const WorkoutHistoryScreen(
+                    filterType: 'week',
+                    title: '本周训练记录',
+                  ),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: _buildStatCard(
+              Icons.calendar_month,
+              _getThisWeekStats(),
+              "本周训练",
+              Colors.orange,
+            ),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildStatCard(
-            Icons.local_fire_department,
-            "${_getThisMonthCount()}",
-            "本月训练",
-            Colors.red,
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const WorkoutHistoryScreen(
+                    filterType: 'month',
+                    title: '本月训练记录',
+                  ),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: _buildStatCard(
+              Icons.local_fire_department,
+              _getThisMonthStats(),
+              "本月训练",
+              Colors.red,
+            ),
           ),
         ),
       ],
@@ -409,7 +463,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildStatCard(
     IconData icon,
-    String value,
+    Map<String, int> stats,
     String label,
     Color color,
   ) {
@@ -426,22 +480,21 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
                   label,
                   style: TextStyle(
                     fontSize: 13,
@@ -449,33 +502,70 @@ class _HomeScreenState extends State<HomeScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 2),
-              ],
-            ),
+              ),
+            ],
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatItem("${stats['days']}", "天", color),
+              Container(width: 1, height: 30, color: Colors.grey[200]),
+              _buildStatItem("${stats['times']}", "次", color),
+            ],
           ),
         ],
       ),
     );
   }
 
-  int _getThisWeekCount() {
-    final now = DateTime.now();
-    final weekStart = now.subtract(Duration(days: now.weekday - 1));
-    return _recentSessions.where((s) => s.startTime.isAfter(weekStart)).length;
+  Widget _buildStatItem(String value, String unit, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          unit,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
   }
 
-  int _getThisMonthCount() {
-    final now = DateTime.now();
-    final monthStart = DateTime(now.year, now.month, 1);
-    return _recentSessions.where((s) => s.startTime.isAfter(monthStart)).length;
+  Map<String, int> _getThisWeekStats() {
+    // ✅ 使用完整的本周数据
+    final uniqueDays = _allWeekSessions
+        .map((s) {
+          final date = s.startTime;
+          return DateTime(date.year, date.month, date.day);
+        })
+        .toSet()
+        .length;
+
+    return {'days': uniqueDays, 'times': _allWeekSessions.length};
+  }
+
+  Map<String, int> _getThisMonthStats() {
+    // ✅ 使用完整的本月数据
+    final uniqueDays = _allMonthSessions
+        .map((s) {
+          final date = s.startTime;
+          return DateTime(date.year, date.month, date.day);
+        })
+        .toSet()
+        .length;
+
+    return {'days': uniqueDays, 'times': _allMonthSessions.length};
   }
 
   Widget _buildRecentSessions() {
