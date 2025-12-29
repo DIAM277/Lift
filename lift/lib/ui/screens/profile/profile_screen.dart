@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
 import 'package:lift/ui/screens/profile/export_data_screen.dart';
 import 'package:lift/ui/screens/profile/statistics_screen.dart';
+import 'package:lift/ui/screens/profile/theme_setting_screen.dart';
 import '../../../data/isar_service.dart';
 import '../../../data/models/workout.dart';
+import '../../../data/models/routine.dart'; // ✅ 添加这个导入
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -54,6 +56,87 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _totalDays = uniqueDays.length;
       _isLoading = false;
     });
+  }
+
+  // ✅ 删除所有数据的方法
+  Future<void> _deleteAllData() async {
+    final isar = await IsarService().db;
+
+    await isar.writeTxn(() async {
+      // 删除所有训练记录
+      await isar.workoutSessions.clear();
+      // 删除所有动作组合
+      await isar.workoutRoutines.clear();
+    });
+
+    // 重新加载统计数据
+    await _loadStats();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('所有数据已删除'), backgroundColor: Colors.green),
+      );
+    }
+  }
+
+  // ✅ 显示删除确认对话框
+  void _showDeleteConfirmDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red, size: 28),
+            SizedBox(width: 12),
+            Text("危险操作", style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "确定要删除所有数据吗？",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 12),
+            Text(
+              "此操作将删除：\n• 所有训练记录\n• 所有训练计划\n• 所有动作组合",
+              style: TextStyle(fontSize: 14, height: 1.5),
+            ),
+            SizedBox(height: 12),
+            Text(
+              "⚠️ 此操作无法撤销！",
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("取消"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteAllData();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text("确认删除", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -124,7 +207,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title: "主题设置",
                   subtitle: "自定义应用外观",
                   onTap: () {
-                    _showComingSoonDialog("主题设置");
+                    // ✅ 跳转到主题设置页面
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ThemeSettingsScreen(),
+                      ),
+                    );
                   },
                 ),
                 _MenuItem(
@@ -171,6 +260,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onTap: () {
                     _showComingSoonDialog("帮助与反馈");
                   },
+                ),
+              ]),
+
+              const SizedBox(height: 16),
+
+              // ✅ 开发者测试区域
+              _buildMenuSection("🚧 开发者选项", [
+                _MenuItem(
+                  icon: Icons.delete_forever,
+                  title: "删除所有数据",
+                  subtitle: "⚠️ 仅供开发测试使用",
+                  onTap: _showDeleteConfirmDialog,
                 ),
               ]),
 
@@ -266,7 +367,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return InkWell(
       onTap: () {
-        // ✅ 点击跳转到统计页面
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const StatisticsScreen()),
@@ -310,7 +410,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
-                // ✅ 添加箭头图标
                 Icon(
                   Icons.arrow_forward_ios,
                   size: 16,
