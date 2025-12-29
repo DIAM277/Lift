@@ -389,7 +389,7 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
                   label: const Text(
                     "添加动作",
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -418,7 +418,7 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
                   icon: const Icon(Icons.folder_open),
                   label: const Text(
                     "导入组合",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

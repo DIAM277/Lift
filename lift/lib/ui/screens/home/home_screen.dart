@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
 import '../../../data/isar_service.dart';
 import '../../../data/models/workout.dart';
-import '../workout/workout_session_screen.dart';
 import '../calendar/add_plan_screen.dart';
 import '../workout/workout_history_screen.dart';
 import '../workout/plan_detail_screen.dart';

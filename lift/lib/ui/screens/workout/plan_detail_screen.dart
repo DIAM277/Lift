@@ -404,7 +404,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
         label: Text(
           isPlanned ? "删除计划" : "删除记录",
           style: const TextStyle(
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),

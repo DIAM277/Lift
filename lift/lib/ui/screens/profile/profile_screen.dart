@@ -8,6 +8,8 @@ import '../../../data/isar_service.dart';
 import '../../../data/models/workout.dart';
 import '../../../data/models/routine.dart';
 import '../../../providers/theme_provider.dart';
+import 'package:lift/ui/screens/tools/bmi_calculator_screen.dart';
+import 'package:lift/ui/screens/tools/rm_calculator_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -227,6 +229,42 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               _buildStatsCard(theme, colorScheme),
               const SizedBox(height: 20),
 
+              // ✅ 添加小工具模块
+              _buildMenuSection(
+                "小工具",
+                [
+                  _MenuItem(
+                    icon: Icons.calculate,
+                    title: "BMI 计算器",
+                    subtitle: "计算身体质量指数",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const BMICalculatorScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _MenuItem(
+                    icon: Icons.fitness_center,
+                    title: "RM 计算器",
+                    subtitle: "计算最大重复次数",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RMCalculatorScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+                theme,
+                colorScheme,
+              ),
+              const SizedBox(height: 16),
+
               // 功能菜单
               _buildMenuSection(
                 "数据管理",
@@ -303,7 +341,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 theme,
                 colorScheme,
               ),
-
               const SizedBox(height: 16),
 
               _buildMenuSection(
