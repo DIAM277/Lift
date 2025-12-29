@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
 import 'package:lift/ui/screens/profile/export_data_screen.dart';
+import 'package:lift/ui/screens/profile/statistics_screen.dart';
 import '../../../data/isar_service.dart';
 import '../../../data/models/workout.dart';
 
@@ -263,68 +264,86 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4F75FF).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+    return InkWell(
+      onTap: () {
+        // ✅ 点击跳转到统计页面
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const StatisticsScreen()),
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4F75FF).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.bar_chart,
+                    color: Color(0xFF4F75FF),
+                    size: 20,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.bar_chart,
-                  color: Color(0xFF4F75FF),
-                  size: 20,
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    "训练统计",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                "训练统计",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatItem(
-                Icons.fitness_center,
-                "$_totalWorkouts",
-                "总训练次数",
-                const Color(0xFF4F75FF),
-              ),
-              _buildStatItem(
-                Icons.calendar_today,
-                "$_totalDays",
-                "训练天数",
-                Colors.orange,
-              ),
-              _buildStatItem(
-                Icons.monitor_weight,
-                "${(_totalVolume / 1000).toStringAsFixed(1)}",
-                "总容量(吨)",
-                Colors.green,
-              ),
-            ],
-          ),
-        ],
+                // ✅ 添加箭头图标
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Colors.grey[400],
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem(
+                  Icons.fitness_center,
+                  "$_totalWorkouts",
+                  "总训练次数",
+                  const Color(0xFF4F75FF),
+                ),
+                _buildStatItem(
+                  Icons.calendar_today,
+                  "$_totalDays",
+                  "训练天数",
+                  Colors.orange,
+                ),
+                _buildStatItem(
+                  Icons.monitor_weight,
+                  "${(_totalVolume / 1000).toStringAsFixed(1)}",
+                  "总容量(吨)",
+                  Colors.green,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
