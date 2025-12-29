@@ -75,7 +75,8 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
     if (session != null) {
       setState(() {
         _session = session;
-        _startTime = DateTime.now();
+        // ✅ 使用session的startTime，如果是新开始的训练，startTime已经在plan_detail_screen中设置
+        _startTime = session.startTime;
         _isLoading = false;
       });
       _startElapsedTimer();
@@ -739,7 +740,8 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
 
   void _completeWorkout() async {
     final endTime = DateTime.now();
-    final duration = (_elapsedSeconds / 60).ceil();
+    // ✅ 使用_startTime计算实际训练时长
+    final duration = endTime.difference(_startTime!).inMinutes;
 
     setState(() {
       _session!.endTime = endTime;

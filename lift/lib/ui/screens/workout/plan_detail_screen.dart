@@ -357,7 +357,11 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    icon: const Icon(Icons.delete_outline, size: 24, color: Colors.white),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 24,
+                      color: Colors.white,
+                    ),
                     label: const Text(
                       "删除",
                       style: TextStyle(
@@ -567,6 +571,19 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
 
   // ✅ 开始训练方法
   void _startWorkout() async {
+    // ✅ 开始训练前，更新开始时间为当前时间
+    final now = DateTime.now();
+    _session!.startTime = now;
+    _session!.status = 'in_progress';
+
+    // 先保存更新后的状态
+    final isar = await IsarService().db;
+    await isar.writeTxn(() async {
+      await isar.workoutSessions.put(_session!);
+    });
+
+    if (!mounted) return;
+
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -574,7 +591,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
       ),
     );
 
-    if (result == true) {
+    if (result == true && mounted) {
       // 训练完成后返回首页
       Navigator.pop(context, true);
     }

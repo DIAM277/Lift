@@ -34,14 +34,12 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
     super.dispose();
   }
 
-  // 显示日期选择器
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      // 使用系统默认语言
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -65,7 +63,6 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
     }
   }
 
-  // 格式化日期显示
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -81,7 +78,6 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
     }
   }
 
-  // 获取日期颜色（今天用蓝色，其他用橙色）
   Color _getDateColor() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -120,7 +116,7 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
         controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
         children: [
-          // ✅ 计划信息卡片（包含日期选择）
+          // 计划信息卡片
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -163,8 +159,6 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-
-                // ✅ 日期选择按钮
                 InkWell(
                   onTap: _selectDate,
                   borderRadius: BorderRadius.circular(12),
@@ -238,10 +232,7 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 16),
-
-                // 计划名称输入
                 Text(
                   "计划名称",
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
@@ -276,7 +267,6 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
           ),
           const SizedBox(height: 20),
 
-          // 动作列表标题
           if (_exercises.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(left: 4, bottom: 12),
@@ -313,7 +303,6 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
               ),
             ),
 
-          // 使用通用动作卡片组件
           ..._exercises.asMap().entries.map((entry) {
             return ExerciseCard<WorkoutSessionLog>(
               key: ValueKey('plan_${entry.key}'),
@@ -333,7 +322,6 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
             );
           }),
 
-          // ✅ 空状态提示
           if (_exercises.isEmpty)
             Container(
               margin: const EdgeInsets.only(top: 20),
@@ -458,6 +446,7 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
     });
   }
 
+  // ✅ 使用美观的底部弹窗选择器
   void _showImportRoutineDialog() async {
     final isar = await IsarService().db;
     final routines = await isar.workoutRoutines.where().findAll();
@@ -471,69 +460,16 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
       return;
     }
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text(
-          "选择动作组合",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.separated(
-            shrinkWrap: true,
-            itemCount: routines.length,
-            separatorBuilder: (context, index) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final routine = routines[index];
-              return ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF4F75FF).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.fitness_center,
-                    color: Color(0xFF4F75FF),
-                    size: 24,
-                  ),
-                ),
-                title: Text(
-                  routine.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                subtitle: Text(
-                  "${routine.exercises.length} 个动作",
-                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                ),
-                trailing: const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: Colors.grey,
-                ),
-                onTap: () {
-                  _importRoutine(routine);
-                  Navigator.pop(ctx);
-                },
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("取消"),
-          ),
-        ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _RoutineSelector(
+        routines: routines,
+        onSelected: (routine) {
+          _importRoutine(routine);
+          Navigator.pop(ctx);
+        },
       ),
     );
   }
@@ -544,7 +480,7 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
         _exercises.add(
           WorkoutSessionLog()
             ..exerciseName = routineEx.exerciseName
-            ..targetPart = ""
+            ..targetPart = routineEx.targetPart
             ..sets = routineEx.sets.map((routineSet) {
               return WorkoutSet()
                 ..weight = routineSet.weight
@@ -570,30 +506,38 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已导入 ${routine.exercises.length} 个动作')),
+      SnackBar(
+        content: Text('已导入 ${routine.exercises.length} 个动作'),
+        backgroundColor: Colors.green,
+      ),
     );
   }
 
-  void _savePlan() async {
-    if (_nameController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请输入计划名称')));
-      return;
-    }
+  Future<void> _savePlan() async {
     if (_exercises.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('请至少添加一个动作')));
+      ).showSnackBar(const SnackBar(content: Text("请至少添加一个动作")));
       return;
     }
 
     final isar = await IsarService().db;
-    // ✅ 使用用户选择的日期
+
+    // ✅ 修复：保存计划时只使用日期部分，不包含时间
+    final planDate = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+    );
+
     final session = WorkoutSession()
-      ..startTime = _selectedDate
+      ..startTime =
+          planDate // ✅ 只保存日期
+      ..endTime = null
+      ..note = _nameController.text.isEmpty ? null : _nameController.text
       ..status = 'planned'
-      ..note = _nameController.text
+      ..duration = 0
+      ..totalVolume = 0
       ..exercises = _exercises;
 
     await isar.writeTxn(() async {
@@ -601,13 +545,200 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
     });
 
     if (mounted) {
-      Navigator.pop(context, true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('已为 ${_formatDate(_selectedDate)} 创建训练计划'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      Navigator.pop(context);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("计划已保存")));
     }
+  }
+}
+
+// ✅ 美观的动作组合选择器（底部弹窗）
+class _RoutineSelector extends StatelessWidget {
+  final List<WorkoutRoutine> routines;
+  final ValueChanged<WorkoutRoutine> onSelected;
+
+  const _RoutineSelector({required this.routines, required this.onSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.75,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 顶部拖动条
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // 标题
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4F75FF).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.folder_open,
+                    color: Color(0xFF4F75FF),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    "选择动作组合",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+          ),
+
+          // 组合列表
+          Flexible(
+            child: ListView.separated(
+              shrinkWrap: true,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+              itemCount: routines.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final routine = routines[index];
+                return InkWell(
+                  onTap: () => onSelected(routine),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: Row(
+                      children: [
+                        // 左侧图标
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFF4F75FF).withOpacity(0.8),
+                                const Color(0xFF6B8FFF),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.fitness_center,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+
+                        // 组合信息
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                routine.name,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(
+                                        0xFF4F75FF,
+                                      ).withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      "${routine.exercises.length} 个动作",
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF4F75FF),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  if (routine.description?.isNotEmpty ??
+                                      false) ...[
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        routine.description!,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // 右侧箭头
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color: Color(0xFF4F75FF),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
