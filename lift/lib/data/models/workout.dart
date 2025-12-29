@@ -33,7 +33,7 @@ class WorkoutSessionLog {
   // 存储ID方便点击跳转到动作详情，存储名字方便展示
   int? exerciseId;
   String? exerciseName;
-  String? targetPart;
+   String? targetPart = 'unknown';
 
   // 记录动作组数
   List<WorkoutSet> sets = [];

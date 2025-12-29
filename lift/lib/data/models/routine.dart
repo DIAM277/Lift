@@ -11,14 +11,14 @@ class WorkoutRoutine {
   // 这个组合里包含哪些动作？
   List<RoutineExercise> exercises = [];
 
-  get description => null;
+  String? description;
 }
 
 // 组合里的某个动作（预设模版）
 @embedded
 class RoutineExercise {
   String? exerciseName; // 动作名称，如 "卧推"
-
+  String? targetPart = 'unknown';
   bool isBodyweight = false; // 是否为自重动作
 
   // 预设的组数据

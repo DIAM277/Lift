@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../data/isar_service.dart';
 import '../../../data/models/routine.dart';
 import '../../widgets/exercise_card.dart';
-import '../../widgets/detail_header_card.dart'; // ✅ 添加导入
+import '../../widgets/detail_header_card.dart';
 
 class RoutineDetailScreen extends StatefulWidget {
   final int routineId;
@@ -51,14 +51,18 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
     }
   }
 
+  // ✅ 修复深拷贝，包含 targetPart
   WorkoutRoutine _deepCopyRoutine(WorkoutRoutine original) {
     final copy = WorkoutRoutine()
       ..id = original.id
       ..name = original.name
+      ..description = original.description
       ..exercises = original.exercises.map((exercise) {
         return RoutineExercise()
           ..exerciseName = exercise.exerciseName
-          // ..targetPart = exercise.targetPart
+          ..targetPart =
+              exercise.targetPart ??
+              'unknown' // ✅ 修复：复制部位信息
           ..isBodyweight = exercise.isBodyweight
           ..sets = exercise.sets.map((set) {
             return RoutineSet()
@@ -90,6 +94,10 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
+            // ✅ 返回时保存（如果在编辑状态）
+            if (_isEditing) {
+              _updateRoutine(silent: true);
+            }
             Navigator.pop(context, true);
           },
         ),
@@ -119,7 +127,6 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
       ),
       resizeToAvoidBottomInset: false,
       body: Stack(
-        // ✅ 使用 Stack 替代 floatingActionButton
         children: [
           ListView(
             controller: _scrollController,
@@ -204,7 +211,6 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                 }),
             ],
           ),
-          // ✅ 底部按钮使用 Positioned
           Positioned(
             left: 16,
             right: 16,
@@ -272,7 +278,6 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
     );
   }
 
-  // ✅ 替换原来的 _buildHeaderCard 方法
   Widget _buildHeaderCard() {
     return DetailHeaderCard(
       primaryColor: const Color(0xFF4F75FF),
@@ -313,7 +318,8 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
       _routine!.exercises.add(
         RoutineExercise()
           ..exerciseName = "新动作"
-          // ..targetPart = ""
+          ..targetPart =
+              'unknown' // ✅ 添加默认值
           ..isBodyweight = false
           ..sets = [
             RoutineSet()
@@ -334,17 +340,22 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
     });
   }
 
-  void _updateRoutine() async {
+  // ✅ 修改保存方法，支持静默保存
+  void _updateRoutine({bool silent = false}) async {
     if (_routine!.name.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请输入组合名称')));
+      if (!silent) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('请输入组合名称')));
+      }
       return;
     }
     if (_routine!.exercises.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请至少添加一个动作')));
+      if (!silent) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('请至少添加一个动作')));
+      }
       return;
     }
 
@@ -353,7 +364,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
       await isar.workoutRoutines.put(_routine!);
     });
 
-    if (mounted) {
+    if (mounted && !silent) {
       setState(() {
         _isEditing = false;
         _nameController.text = _routine!.name;

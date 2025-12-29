@@ -17,14 +17,19 @@ const WorkoutRoutineSchema = CollectionSchema(
   name: r'WorkoutRoutine',
   id: 6259582389894500739,
   properties: {
-    r'exercises': PropertySchema(
+    r'description': PropertySchema(
       id: 0,
+      name: r'description',
+      type: IsarType.string,
+    ),
+    r'exercises': PropertySchema(
+      id: 1,
       name: r'exercises',
       type: IsarType.objectList,
       target: r'RoutineExercise',
     ),
     r'name': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'name',
       type: IsarType.string,
     )
@@ -52,6 +57,12 @@ int _workoutRoutineEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.description;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.exercises.length * 3;
   {
     final offsets = allOffsets[RoutineExercise]!;
@@ -71,13 +82,14 @@ void _workoutRoutineSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
+  writer.writeString(offsets[0], object.description);
   writer.writeObjectList<RoutineExercise>(
-    offsets[0],
+    offsets[1],
     allOffsets,
     RoutineExerciseSchema.serialize,
     object.exercises,
   );
-  writer.writeString(offsets[1], object.name);
+  writer.writeString(offsets[2], object.name);
 }
 
 WorkoutRoutine _workoutRoutineDeserialize(
@@ -87,15 +99,16 @@ WorkoutRoutine _workoutRoutineDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = WorkoutRoutine();
+  object.description = reader.readStringOrNull(offsets[0]);
   object.exercises = reader.readObjectList<RoutineExercise>(
-        offsets[0],
+        offsets[1],
         RoutineExerciseSchema.deserialize,
         allOffsets,
         RoutineExercise(),
       ) ??
       [];
   object.id = id;
-  object.name = reader.readString(offsets[1]);
+  object.name = reader.readString(offsets[2]);
   return object;
 }
 
@@ -107,6 +120,8 @@ P _workoutRoutineDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
+      return (reader.readStringOrNull(offset)) as P;
+    case 1:
       return (reader.readObjectList<RoutineExercise>(
             offset,
             RoutineExerciseSchema.deserialize,
@@ -114,7 +129,7 @@ P _workoutRoutineDeserializeProp<P>(
             RoutineExercise(),
           ) ??
           []) as P;
-    case 1:
+    case 2:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -217,6 +232,160 @@ extension WorkoutRoutineQueryWhere
 
 extension WorkoutRoutineQueryFilter
     on QueryBuilder<WorkoutRoutine, WorkoutRoutine, QFilterCondition> {
+  QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterFilterCondition>
+      descriptionIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'description',
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterFilterCondition>
+      descriptionIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'description',
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterFilterCondition>
+      descriptionEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'description',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterFilterCondition>
+      descriptionGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'description',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterFilterCondition>
+      descriptionLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'description',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterFilterCondition>
+      descriptionBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'description',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterFilterCondition>
+      descriptionStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'description',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterFilterCondition>
+      descriptionEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'description',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterFilterCondition>
+      descriptionContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'description',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterFilterCondition>
+      descriptionMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'description',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterFilterCondition>
+      descriptionIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'description',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterFilterCondition>
+      descriptionIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'description',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterFilterCondition>
       exercisesLengthEqualTo(int length) {
     return QueryBuilder.apply(this, (query) {
@@ -513,6 +682,20 @@ extension WorkoutRoutineQueryLinks
 
 extension WorkoutRoutineQuerySortBy
     on QueryBuilder<WorkoutRoutine, WorkoutRoutine, QSortBy> {
+  QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterSortBy>
+      sortByDescription() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'description', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterSortBy>
+      sortByDescriptionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'description', Sort.desc);
+    });
+  }
+
   QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -528,6 +711,20 @@ extension WorkoutRoutineQuerySortBy
 
 extension WorkoutRoutineQuerySortThenBy
     on QueryBuilder<WorkoutRoutine, WorkoutRoutine, QSortThenBy> {
+  QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterSortBy>
+      thenByDescription() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'description', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterSortBy>
+      thenByDescriptionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'description', Sort.desc);
+    });
+  }
+
   QueryBuilder<WorkoutRoutine, WorkoutRoutine, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -555,6 +752,13 @@ extension WorkoutRoutineQuerySortThenBy
 
 extension WorkoutRoutineQueryWhereDistinct
     on QueryBuilder<WorkoutRoutine, WorkoutRoutine, QDistinct> {
+  QueryBuilder<WorkoutRoutine, WorkoutRoutine, QDistinct> distinctByDescription(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'description', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<WorkoutRoutine, WorkoutRoutine, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -568,6 +772,13 @@ extension WorkoutRoutineQueryProperty
   QueryBuilder<WorkoutRoutine, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<WorkoutRoutine, String?, QQueryOperations>
+      descriptionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'description');
     });
   }
 
@@ -611,6 +822,11 @@ const RoutineExerciseSchema = Schema(
       name: r'sets',
       type: IsarType.objectList,
       target: r'RoutineSet',
+    ),
+    r'targetPart': PropertySchema(
+      id: 3,
+      name: r'targetPart',
+      type: IsarType.string,
     )
   },
   estimateSize: _routineExerciseEstimateSize,
@@ -639,6 +855,12 @@ int _routineExerciseEstimateSize(
       bytesCount += RoutineSetSchema.estimateSize(value, offsets, allOffsets);
     }
   }
+  {
+    final value = object.targetPart;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -656,6 +878,7 @@ void _routineExerciseSerialize(
     RoutineSetSchema.serialize,
     object.sets,
   );
+  writer.writeString(offsets[3], object.targetPart);
 }
 
 RoutineExercise _routineExerciseDeserialize(
@@ -674,6 +897,7 @@ RoutineExercise _routineExerciseDeserialize(
         RoutineSet(),
       ) ??
       [];
+  object.targetPart = reader.readStringOrNull(offsets[3]);
   return object;
 }
 
@@ -696,6 +920,8 @@ P _routineExerciseDeserializeProp<P>(
             RoutineSet(),
           ) ??
           []) as P;
+    case 3:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -953,6 +1179,160 @@ extension RoutineExerciseQueryFilter
         upper,
         includeUpper,
       );
+    });
+  }
+
+  QueryBuilder<RoutineExercise, RoutineExercise, QAfterFilterCondition>
+      targetPartIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'targetPart',
+      ));
+    });
+  }
+
+  QueryBuilder<RoutineExercise, RoutineExercise, QAfterFilterCondition>
+      targetPartIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'targetPart',
+      ));
+    });
+  }
+
+  QueryBuilder<RoutineExercise, RoutineExercise, QAfterFilterCondition>
+      targetPartEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'targetPart',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RoutineExercise, RoutineExercise, QAfterFilterCondition>
+      targetPartGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'targetPart',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RoutineExercise, RoutineExercise, QAfterFilterCondition>
+      targetPartLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'targetPart',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RoutineExercise, RoutineExercise, QAfterFilterCondition>
+      targetPartBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'targetPart',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RoutineExercise, RoutineExercise, QAfterFilterCondition>
+      targetPartStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'targetPart',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RoutineExercise, RoutineExercise, QAfterFilterCondition>
+      targetPartEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'targetPart',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RoutineExercise, RoutineExercise, QAfterFilterCondition>
+      targetPartContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'targetPart',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RoutineExercise, RoutineExercise, QAfterFilterCondition>
+      targetPartMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'targetPart',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RoutineExercise, RoutineExercise, QAfterFilterCondition>
+      targetPartIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'targetPart',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<RoutineExercise, RoutineExercise, QAfterFilterCondition>
+      targetPartIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'targetPart',
+        value: '',
+      ));
     });
   }
 }

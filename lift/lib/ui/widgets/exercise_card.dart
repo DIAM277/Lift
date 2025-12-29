@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../data/models/workout.dart';
 import '../../data/models/routine.dart';
+import '../../services/muscle_group_service.dart';
 
 /// 通用的动作卡片组件
-/// 支持两种数据类型：WorkoutSessionLog 和 RoutineExercise
 class ExerciseCard<T> extends StatefulWidget {
   final int index;
   final T exercise;
   final bool isEditable;
   final VoidCallback onRemove;
   final VoidCallback? onChanged;
-  final bool showBodyweightToggle; // 是否显示自重切换按钮
-  final bool showVolume; // 是否显示容量信息
+  final bool showBodyweightToggle;
+  final bool showVolume;
 
   const ExerciseCard({
     super.key,
@@ -29,7 +29,6 @@ class ExerciseCard<T> extends StatefulWidget {
 }
 
 class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
-  // 本地状态：是否为自重训练（用于 WorkoutSessionLog）
   bool _localIsBodyweight = false;
 
   // 获取动作名称
@@ -48,9 +47,43 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
     final ex = widget.exercise;
     if (ex is WorkoutSessionLog) {
       ex.exerciseName = value;
+      // 自动识别部位（仅当部位为空或未知时）
+      if (ex.targetPart == null ||
+          ex.targetPart!.isEmpty ||
+          ex.targetPart == 'unknown') {
+        ex.targetPart = MuscleGroupService.detectMuscleGroup(value);
+      }
     } else if (ex is RoutineExercise) {
       ex.exerciseName = value;
+      if (ex.targetPart == null ||
+          ex.targetPart!.isEmpty ||
+          ex.targetPart == 'unknown') {
+        ex.targetPart = MuscleGroupService.detectMuscleGroup(value);
+      }
     }
+    widget.onChanged?.call();
+  }
+
+  // 获取训练部位
+  String get targetPart {
+    final ex = widget.exercise;
+    if (ex is WorkoutSessionLog) {
+      return ex.targetPart ?? 'unknown';
+    } else if (ex is RoutineExercise) {
+      return ex.targetPart ?? 'unknown';
+    }
+    return 'unknown';
+  }
+
+  // 设置训练部位
+  set targetPart(String value) {
+    final ex = widget.exercise;
+    if (ex is WorkoutSessionLog) {
+      ex.targetPart = value;
+    } else if (ex is RoutineExercise) {
+      ex.targetPart = value;
+    }
+    setState(() {});
     widget.onChanged?.call();
   }
 
@@ -71,7 +104,6 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
     if (ex is RoutineExercise) {
       return ex.isBodyweight;
     }
-    // 对于 WorkoutSessionLog，使用本地状态
     return _localIsBodyweight;
   }
 
@@ -86,7 +118,6 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
         }
       }
     } else {
-      // 对于 WorkoutSessionLog，更新本地状态并修改所有组的重量
       _localIsBodyweight = value;
       if (value) {
         for (var set in sets) {
@@ -108,10 +139,29 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
     return total;
   }
 
+  // 美观的部位选择器
+  void _showMuscleGroupPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _MuscleGroupSelector(
+        currentSelection: targetPart,
+        onSelected: (key) {
+          targetPart = key;
+          Navigator.pop(ctx);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final muscleGroup = MuscleGroupService.getMuscleGroup(targetPart);
+    final isUnknown = targetPart == 'unknown';
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12), // 从 16 改为 12
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -126,114 +176,185 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 8, 8), // 减小内边距
-            child: Row(
+            padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 动作名称
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (widget.isEditable)
-                        _ExerciseNameInput(
-                          initialValue: exerciseName,
-                          onChanged: (value) {
-                            exerciseName = value;
-                          },
-                        )
-                      else
-                        Text(
-                          exerciseName,
-                          style: const TextStyle(
-                            fontSize: 18, // 从 20 改为 18
-                            fontWeight: FontWeight.bold,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // ✅ 动作名称（限制最大宽度）
+                    Flexible(
+                      flex: 3,
+                      child: widget.isEditable
+                          ? _ExerciseNameInput(
+                              initialValue: exerciseName,
+                              onChanged: (value) {
+                                setState(() {
+                                  exerciseName = value;
+                                });
+                              },
+                            )
+                          : Text(
+                              exerciseName,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // ✅ 部位标签（显示文字）
+                    GestureDetector(
+                      onTap: widget.isEditable ? _showMuscleGroupPicker : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isUnknown
+                              ? Colors.orange.withOpacity(0.1)
+                              : muscleGroup.color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: isUnknown
+                                ? Colors.orange.withOpacity(0.5)
+                                : muscleGroup.color.withOpacity(0.5),
+                            width: 1,
                           ),
                         ),
-                      if (widget.showVolume) ...[
-                        const SizedBox(height: 2), // 从 4 改为 2
-                        Text(
-                          "总容量: ${_calculateVolume().toInt()}kg",
-                          style: TextStyle(
-                            fontSize: 12, // 从 13 改为 12
-                            color: Colors.grey[500],
-                            fontWeight: FontWeight.w500,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              muscleGroup.emoji,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              muscleGroup.name,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isUnknown
+                                    ? Colors.orange
+                                    : muscleGroup.color,
+                              ),
+                            ),
+                            if (widget.isEditable) ...[
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.edit,
+                                size: 10,
+                                color: isUnknown
+                                    ? Colors.orange
+                                    : muscleGroup.color,
+                              ),
+                            ],
+                          ],
                         ),
-                      ],
-                    ],
-                  ),
-                ),
-                // 自重/负重切换按钮
-                if (widget.showBodyweightToggle && widget.isEditable) ...[
-                  const SizedBox(width: 6), // 从 8 改为 6
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        setBodyweight(!isBodyweight);
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10, // 从 12 改为 10
-                        vertical: 6, // 从 8 改为 6
                       ),
-                      decoration: BoxDecoration(
-                        color: isBodyweight
-                            ? const Color(0xFF4F75FF).withOpacity(0.1)
-                            : Colors.grey[100],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isBodyweight
-                                ? Icons.accessibility_new
-                                : Icons.fitness_center,
-                            size: 14, // 从 16 改为 14
+                    ),
+
+                    // 自重/负重切换按钮
+                    if (widget.showBodyweightToggle && widget.isEditable) ...[
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            setBodyweight(!isBodyweight);
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
                             color: isBodyweight
-                                ? const Color(0xFF4F75FF)
-                                : Colors.grey[600],
-                          ),
-                          const SizedBox(width: 3), // 从 4 改为 3
-                          Text(
-                            isBodyweight ? "自重" : "负重",
-                            style: TextStyle(
-                              fontSize: 12, // 从 13 改为 12
+                                ? const Color(0xFF4F75FF).withOpacity(0.1)
+                                : Colors.grey[100],
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
                               color: isBodyweight
-                                  ? const Color(0xFF4F75FF)
-                                  : Colors.grey[600],
-                              fontWeight: FontWeight.w600,
+                                  ? const Color(0xFF4F75FF).withOpacity(0.5)
+                                  : Colors.grey[300]!,
+                              width: 1,
                             ),
                           ),
-                        ],
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isBodyweight
+                                    ? Icons.accessibility_new
+                                    : Icons.fitness_center,
+                                size: 12,
+                                color: isBodyweight
+                                    ? const Color(0xFF4F75FF)
+                                    : Colors.grey[600],
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                isBodyweight ? "自重" : "负重",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: isBodyweight
+                                      ? const Color(0xFF4F75FF)
+                                      : Colors.grey[600],
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
+                    ],
+
+                    // 删除按钮
+                    if (widget.isEditable) ...[
+                      const SizedBox(width: 2),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.redAccent,
+                          size: 20,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                        onPressed: widget.onRemove,
+                      ),
+                    ],
+                  ],
+                ),
+
+                // 总容量显示
+                if (widget.showVolume) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    "总容量: ${_calculateVolume().toInt()}kg",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[500],
+                      fontWeight: FontWeight.w500,
                     ),
-                  ),
-                ],
-                // 删除按钮
-                if (widget.isEditable) ...[
-                  const SizedBox(width: 2), // 从 4 改为 2
-                  IconButton(
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.redAccent,
-                      size: 22, // 从 24 改为 22
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 36, // 从 40 改为 36
-                      minHeight: 36, // 从 40 改为 36
-                    ),
-                    onPressed: widget.onRemove,
                   ),
                 ],
               ],
             ),
           ),
           Divider(height: 1, color: Colors.grey[200]),
+
+          // ...existing code... (组列表部分保持不变)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 12), // 减小内边距
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
             child: Column(
               children: [
                 // 表头
@@ -244,7 +365,7 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
                       child: Text(
                         "组数",
                         style: TextStyle(
-                          fontSize: 12, // 从 13 改为 12
+                          fontSize: 12,
                           color: Colors.grey[500],
                           fontWeight: FontWeight.w500,
                         ),
@@ -255,7 +376,7 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
                         isBodyweight ? "类型" : "重量(kg)",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 12, // 从 13 改为 12
+                          fontSize: 12,
                           color: Colors.grey[500],
                           fontWeight: FontWeight.w500,
                         ),
@@ -266,7 +387,7 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
                         "次数",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 12, // 从 13 改为 12
+                          fontSize: 12,
                           color: Colors.grey[500],
                           fontWeight: FontWeight.w500,
                         ),
@@ -279,17 +400,17 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
                           "容量(kg)",
                           textAlign: TextAlign.right,
                           style: TextStyle(
-                            fontSize: 12, // 从 13 改为 12
+                            fontSize: 12,
                             color: Colors.grey[500],
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
-                    if (widget.isEditable)
-                      const SizedBox(width: 36), // 从 40 改为 36
+                    if (widget.isEditable) const SizedBox(width: 36),
                   ],
                 ),
-                const SizedBox(height: 6), // 从 8 改为 6
+                const SizedBox(height: 6),
+
                 // 组列表
                 ...sets.asMap().entries.map((setEntry) {
                   if (widget.isEditable) {
@@ -317,7 +438,7 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
 
                 // 添加组按钮
                 if (widget.isEditable) ...[
-                  const SizedBox(height: 2), // 从 4 改为 2
+                  const SizedBox(height: 2),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -332,7 +453,6 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
                           if (isBodyweight) {
                             w = 0;
                           }
-                          // 根据类型添加对应的 Set
                           final ex = widget.exercise;
                           if (ex is WorkoutSessionLog) {
                             ex.sets.add(
@@ -357,15 +477,10 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 6,
-                        ), // 从 8 改为 6
+                        padding: const EdgeInsets.symmetric(vertical: 6),
                       ),
-                      icon: const Icon(Icons.add, size: 16), // 从 18 改为 16
-                      label: const Text(
-                        "添加组",
-                        style: TextStyle(fontSize: 13), // 添加字体大小
-                      ),
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text("添加组", style: TextStyle(fontSize: 13)),
                     ),
                   ),
                 ],
@@ -383,7 +498,7 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
     final volume = (weight * reps).toInt();
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6), // 从 8 改为 6
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
           SizedBox(
@@ -391,7 +506,7 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
             child: Text(
               "${index + 1}",
               style: const TextStyle(
-                fontSize: 15, // 从 16 改为 15
+                fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: Colors.black87,
               ),
@@ -401,20 +516,14 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
             child: Text(
               weight.toStringAsFixed(1).replaceAll(".0", ""),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 15, // 从 16 改为 15
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
             ),
           ),
           Expanded(
             child: Text(
               reps.toString(),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 15, // 从 16 改为 15
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
             ),
           ),
           if (widget.showVolume)
@@ -424,12 +533,147 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
                 volume.toString(),
                 textAlign: TextAlign.right,
                 style: const TextStyle(
-                  fontSize: 15, // 从 16 改为 15
+                  fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF4F75FF),
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+// ✅ 美观的部位选择器（底部弹窗）
+class _MuscleGroupSelector extends StatelessWidget {
+  final String currentSelection;
+  final ValueChanged<String> onSelected;
+
+  const _MuscleGroupSelector({
+    required this.currentSelection,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 顶部拖动条
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // 标题
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+            child: Row(
+              children: [
+                const Text(
+                  "选择训练部位",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+          ),
+
+          // 部位网格
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+            child: GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 2.5,
+              children: MuscleGroupService.getAllGroups().map((entry) {
+                final isSelected = currentSelection == entry.key;
+                final group = entry.value;
+
+                return InkWell(
+                  onTap: () => onSelected(entry.key),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? group.color.withOpacity(0.15)
+                          : Colors.grey[50],
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected ? group.color : Colors.grey[200]!,
+                        width: isSelected ? 2.5 : 1,
+                      ),
+                    ),
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                group.emoji,
+                                style: const TextStyle(fontSize: 28),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                group.name,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w600,
+                                  color: isSelected
+                                      ? group.color
+                                      : Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (isSelected)
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: group.color,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.check,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
         ],
       ),
     );
@@ -468,17 +712,14 @@ class _ExerciseNameInputState extends State<_ExerciseNameInput> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), // 减小内边距
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: const Color(0xFFF5F7FA),
         borderRadius: BorderRadius.circular(8),
       ),
       child: TextField(
         controller: _controller,
-        style: const TextStyle(
-          fontSize: 18, // 从 20 改为 18
-          fontWeight: FontWeight.bold,
-        ),
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         decoration: const InputDecoration(
           border: InputBorder.none,
           hintText: "输入动作名称",
@@ -491,7 +732,7 @@ class _ExerciseNameInputState extends State<_ExerciseNameInput> {
   }
 }
 
-// 组输入行组件
+// 组输入行组件（保持不变）
 class _SetRowInput extends StatefulWidget {
   final int index;
   final dynamic set;
@@ -550,7 +791,7 @@ class _SetRowInputState extends State<_SetRowInput> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6), // 从 8 改为 6
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
           SizedBox(
@@ -558,7 +799,7 @@ class _SetRowInputState extends State<_SetRowInput> {
             child: Text(
               "${widget.index + 1}",
               style: const TextStyle(
-                fontSize: 15, // 从 16 改为 15
+                fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: Colors.black87,
               ),
@@ -566,9 +807,9 @@ class _SetRowInputState extends State<_SetRowInput> {
           ),
           Expanded(
             child: Container(
-              height: 34, // 从 36 改为 34
+              height: 34,
               margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 10), // 从 12 改为 10
+              padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
                 color: const Color(0xFFF5F7FA),
                 borderRadius: BorderRadius.circular(8),
@@ -579,7 +820,7 @@ class _SetRowInputState extends State<_SetRowInput> {
                         "自重",
                         style: TextStyle(
                           color: Colors.grey,
-                          fontSize: 15, // 从 16 改为 15
+                          fontSize: 15,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -589,7 +830,7 @@ class _SetRowInputState extends State<_SetRowInput> {
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontSize: 15, // 从 16 改为 15
+                        fontSize: 15,
                         fontWeight: FontWeight.w500,
                       ),
                       decoration: const InputDecoration(
@@ -605,9 +846,9 @@ class _SetRowInputState extends State<_SetRowInput> {
           ),
           Expanded(
             child: Container(
-              height: 34, // 从 36 改为 34
+              height: 34,
               margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 10), // 从 12 改为 10
+              padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
                 color: const Color(0xFFF5F7FA),
                 borderRadius: BorderRadius.circular(8),
@@ -617,7 +858,7 @@ class _SetRowInputState extends State<_SetRowInput> {
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 15, // 从 16 改为 15
+                  fontSize: 15,
                   fontWeight: FontWeight.w500,
                 ),
                 decoration: const InputDecoration(
@@ -638,7 +879,7 @@ class _SetRowInputState extends State<_SetRowInput> {
                 "${(widget.set.weight * widget.set.reps).toInt()}",
                 textAlign: TextAlign.right,
                 style: const TextStyle(
-                  fontSize: 15, // 从 16 改为 15
+                  fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF4F75FF),
                 ),
@@ -648,13 +889,10 @@ class _SetRowInputState extends State<_SetRowInput> {
             icon: const Icon(
               Icons.remove_circle_outline,
               color: Colors.redAccent,
-              size: 18, // 从 20 改为 18
+              size: 18,
             ),
             padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(
-              minWidth: 36, // 从 40 改为 36
-              minHeight: 36, // 从 40 改为 36
-            ),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             onPressed: widget.onRemove,
           ),
         ],

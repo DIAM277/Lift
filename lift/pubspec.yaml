@@ -47,6 +47,9 @@ dependencies:
   # share_plus: ^7.2.1
   csv: ^6.0.0
 
+  # 图表
+  fl_chart: ^0.68.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
