@@ -24,21 +24,29 @@ class _CreateRoutineScreenState extends State<CreateRoutineScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
       appBar: AppBar(
         title: const Text(
           "新建动作组合",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
         elevation: 0,
         actions: [
           TextButton(
             onPressed: _saveRoutine,
-            child: const Text(
+            child: Text(
               "保存",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: colorScheme.primary, // ✅ 使用主题主色
+              ),
             ),
           ),
         ],
@@ -52,7 +60,7 @@ class _CreateRoutineScreenState extends State<CreateRoutineScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.cardColor, // ✅ 使用主题卡片色
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
@@ -70,12 +78,12 @@ class _CreateRoutineScreenState extends State<CreateRoutineScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF4F75FF).withOpacity(0.1),
+                        color: colorScheme.primary.withOpacity(0.1), // ✅ 使用主题主色
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.fitness_center,
-                        color: Color(0xFF4F75FF),
+                        color: colorScheme.primary, // ✅ 使用主题主色
                         size: 20,
                       ),
                     ),
@@ -97,15 +105,16 @@ class _CreateRoutineScreenState extends State<CreateRoutineScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F7FA),
+                    color: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: TextField(
                     controller: _nameController,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       height: 1.2,
+                      color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                     ),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
@@ -128,7 +137,7 @@ class _CreateRoutineScreenState extends State<CreateRoutineScreen> {
               exercise: entry.value,
               isEditable: true,
               showBodyweightToggle: true,
-              showVolume: false, // Routine 不显示容量
+              showVolume: false,
               onRemove: () {
                 setState(() {
                   _exercises.removeAt(entry.key);
@@ -150,7 +159,7 @@ class _CreateRoutineScreenState extends State<CreateRoutineScreen> {
           child: ElevatedButton.icon(
             onPressed: _addExercise,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4F75FF),
+              backgroundColor: colorScheme.primary, // ✅ 使用主题主色
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

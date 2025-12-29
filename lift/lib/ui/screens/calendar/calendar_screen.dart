@@ -38,20 +38,27 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     final workoutsAsync = ref.watch(monthlyWorkoutsProvider(_focusedDay));
     final selectedDayWorkoutsAsync = ref.watch(
       dailyWorkoutsProvider(_selectedDay ?? _focusedDay),
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
         elevation: 0,
         title: Row(
           children: [
             IconButton(
-              icon: const Icon(Icons.chevron_left, color: Colors.black),
+              icon: Icon(
+                Icons.chevron_left,
+                color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+              ),
               onPressed: () {
                 setState(() {
                   _focusedDay = DateTime(
@@ -65,8 +72,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               child: Center(
                 child: Text(
                   '训练回顾 · ${DateFormat('yyyy年MM月', 'zh_CN').format(_focusedDay)}',
-                  style: const TextStyle(
-                    color: Colors.black,
+                  style: TextStyle(
+                    color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
@@ -74,7 +81,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.chevron_right, color: Colors.black),
+              icon: Icon(
+                Icons.chevron_right,
+                color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+              ),
               onPressed: () {
                 setState(() {
                   _focusedDay = DateTime(
@@ -98,7 +108,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             Container(
               margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: theme.cardColor, // ✅ 使用主题卡片色
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -109,19 +119,29 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 ],
               ),
               child: workoutsAsync.when(
-                data: (workouts) => _buildCalendar(workouts),
-                loading: () => const SizedBox(
+                data: (workouts) =>
+                    _buildCalendar(workouts, theme, colorScheme),
+                loading: () => SizedBox(
                   height: 400,
-                  child: Center(child: CircularProgressIndicator()),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: colorScheme.primary, // ✅ 使用主题主色
+                    ),
+                  ),
                 ),
                 error: (err, stack) => Center(child: Text('加载失败: $err')),
               ),
             ),
             selectedDayWorkoutsAsync.when(
-              data: (workouts) => _buildDayWorkoutsList(workouts),
-              loading: () => const SizedBox(
+              data: (workouts) =>
+                  _buildDayWorkoutsList(workouts, theme, colorScheme),
+              loading: () => SizedBox(
                 height: 200,
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: colorScheme.primary, // ✅ 使用主题主色
+                  ),
+                ),
               ),
               error: (err, stack) => Center(child: Text('加载失败: $err')),
             ),
@@ -150,7 +170,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4F75FF),
+                    backgroundColor: colorScheme.primary, // ✅ 使用主题主色
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -172,7 +192,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  Widget _buildCalendar(List<WorkoutSession> workouts) {
+  Widget _buildCalendar(
+    List<WorkoutSession> workouts,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
     final Map<DateTime, List<WorkoutSession>> workoutsByDate = {};
     for (var workout in workouts) {
       final date = DateTime(
@@ -196,14 +220,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         headerVisible: false,
         daysOfWeekHeight: 40,
         rowHeight: 48,
-        daysOfWeekStyle: const DaysOfWeekStyle(
+        daysOfWeekStyle: DaysOfWeekStyle(
           weekdayStyle: TextStyle(
-            color: Colors.black87,
+            color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
           weekendStyle: TextStyle(
-            color: Colors.black87,
+            color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -211,17 +235,22 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         calendarStyle: CalendarStyle(
           outsideDaysVisible: true,
           cellMargin: const EdgeInsets.all(4),
-          weekendTextStyle: const TextStyle(color: Colors.black87),
-          selectedDecoration: const BoxDecoration(
-            color: Color(0xFF4F75FF),
+          defaultTextStyle: TextStyle(
+            color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+          ),
+          weekendTextStyle: TextStyle(
+            color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+          ),
+          selectedDecoration: BoxDecoration(
+            color: colorScheme.primary, // ✅ 使用主题主色
             shape: BoxShape.circle,
           ),
           todayDecoration: BoxDecoration(
-            color: Colors.grey[300],
+            color: colorScheme.primary.withOpacity(0.3), // ✅ 使用主题主色
             shape: BoxShape.circle,
           ),
-          markerDecoration: const BoxDecoration(
-            color: Color(0xFF4F75FF),
+          markerDecoration: BoxDecoration(
+            color: colorScheme.primary, // ✅ 使用主题主色
             shape: BoxShape.circle,
           ),
         ),
@@ -258,8 +287,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       width: 6,
                       height: 6,
                       margin: const EdgeInsets.symmetric(horizontal: 1),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF4F75FF),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary, // ✅ 使用主题主色
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -282,7 +311,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  Widget _buildDayWorkoutsList(List<WorkoutSession> workouts) {
+  Widget _buildDayWorkoutsList(
+    List<WorkoutSession> workouts,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
     if (workouts.isEmpty) {
       return Padding(
         padding: const EdgeInsets.only(bottom: 100),
@@ -306,21 +339,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       );
     }
 
-    // ✅ 排序：计划中(planned)优先，已完成(completed)其次
     final sortedWorkouts = List<WorkoutSession>.from(workouts)
       ..sort((a, b) {
-        // 先按状态排序：planned < completed
         if (a.status == b.status) {
-          // 同状态下按时间排序（新的在前）
           return b.startTime.compareTo(a.startTime);
         }
-        // planned 在前
         return a.status == 'planned' ? -1 : 1;
       });
 
     final dateStr = DateFormat('MM月dd日', 'zh_CN').format(_selectedDay!);
-
-    // ✅ 统计计划数和完成数
     final plannedCount = workouts.where((w) => w.status == 'planned').length;
     final completedCount = workouts
         .where((w) => w.status == 'completed')
@@ -340,11 +367,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
+                    color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                   ),
                 ),
                 const SizedBox(width: 12),
-                // ✅ 添加统计标签
                 if (plannedCount > 0)
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -418,21 +444,26 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               ],
             ),
           ),
-          // ✅ 使用排序后的列表
-          ...sortedWorkouts.map((workout) => _buildWorkoutCard(workout)),
+          ...sortedWorkouts.map(
+            (workout) => _buildWorkoutCard(workout, theme, colorScheme),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildWorkoutCard(WorkoutSession session) {
+  Widget _buildWorkoutCard(
+    WorkoutSession session,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
     final isCompleted = session.status == 'completed';
     final isPlanned = session.status == 'planned';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor, // ✅ 使用主题卡片色
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -483,9 +514,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       children: [
                         Text(
                           session.note ?? "训练记录",
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.bold,
+                            color:
+                                theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -513,7 +546,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   _buildInfoChip(
                     Icons.fitness_center,
                     "${session.exercises.length} 个动作",
-                    const Color(0xFF4F75FF),
+                    colorScheme.primary, // ✅ 使用主题主色
                   ),
                   if (isCompleted) ...[
                     const SizedBox(width: 8),

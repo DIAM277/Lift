@@ -42,26 +42,34 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
       appBar: AppBar(
         title: const Text(
           "动作组合",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
         elevation: 0,
       ),
       body: RefreshIndicator(
         onRefresh: _loadRoutines,
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: colorScheme.primary, // ✅ 使用主题主色
+                ),
+              )
             : ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
                   // 统计卡片
                   if (_routines.isNotEmpty) ...[
-                    _buildStatsCard(),
+                    _buildStatsCard(theme, colorScheme),
                     const SizedBox(height: 20),
 
                     // 组合列表标题
@@ -74,7 +82,8 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.grey[800],
+                              color:
+                                  theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -84,15 +93,17 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF4F75FF).withOpacity(0.1),
+                              color: colorScheme.primary.withOpacity(
+                                0.1,
+                              ), // ✅ 使用主题主色
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               "${_routines.length}",
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF4F75FF),
+                                color: colorScheme.primary, // ✅ 使用主题主色
                               ),
                             ),
                           ),
@@ -105,7 +116,10 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                   if (_routines.isEmpty)
                     _buildEmptyState()
                   else
-                    ..._routines.map((routine) => _buildRoutineCard(routine)),
+                    ..._routines.map(
+                      (routine) =>
+                          _buildRoutineCard(routine, theme, colorScheme),
+                    ),
 
                   // 底部留出空间
                   const SizedBox(height: 80),
@@ -131,7 +145,7 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4F75FF),
+              backgroundColor: colorScheme.primary, // ✅ 使用主题主色
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -152,19 +166,19 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
     );
   }
 
-  Widget _buildStatsCard() {
+  Widget _buildStatsCard(ThemeData theme, ColorScheme colorScheme) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4F75FF), Color(0xFF6B8FFF)],
+        gradient: LinearGradient(
+          colors: [colorScheme.primary, colorScheme.secondary], // ✅ 使用主题颜色
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4F75FF).withOpacity(0.3),
+            color: colorScheme.primary.withOpacity(0.3), // ✅ 使用主题主色
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -277,18 +291,17 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
     );
   }
 
-  Widget _buildRoutineCard(WorkoutRoutine routine) {
-    // TODO统计不同部位的动作
+  Widget _buildRoutineCard(
+    WorkoutRoutine routine,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
     final Map<String, int> partCounts = {};
-    // for (var exercise in routine.exercises) {
-    //   final part = exercise.targetPart.isNotEmpty ? exercise.targetPart : "其他";
-    //   partCounts[part] = (partCounts[part] ?? 0) + 1;
-    // }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor, // ✅ 使用主题卡片色
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -321,12 +334,12 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF4F75FF).withOpacity(0.1),
+                      color: colorScheme.primary.withOpacity(0.1), // ✅ 使用主题主色
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.folder_special,
-                      color: Color(0xFF4F75FF),
+                      color: colorScheme.primary, // ✅ 使用主题主色
                       size: 24,
                     ),
                   ),
@@ -337,9 +350,11 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                       children: [
                         Text(
                           routine.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color:
+                                theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                           ),
                         ),
                         const SizedBox(height: 2),

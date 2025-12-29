@@ -154,31 +154,45 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
   }
 
   void _showSuccessDialog(String title, String filePath) {
+    // ✅ 获取主题
+    final theme = Theme.of(context);
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
         title: Row(
           children: [
             const Icon(Icons.check_circle, color: Colors.green, size: 28),
             const SizedBox(width: 12),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+              ),
+            ),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               "文件已保存到:",
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+              ),
             ),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[300]!),
+                border: Border.all(color: theme.dividerColor), // ✅ 使用主题分割线色
               ),
               child: Row(
                 children: [
@@ -187,13 +201,17 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
                       filePath,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[800],
+                        color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
                         fontFamily: 'monospace',
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.copy, size: 20),
+                    icon: Icon(
+                      Icons.copy,
+                      size: 20,
+                      color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+                    ),
                     onPressed: () {
                       Clipboard.setData(ClipboardData(text: filePath));
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -231,7 +249,10 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text("确定"),
+            child: Text(
+              "确定",
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+            ),
           ),
         ],
       ),
@@ -240,33 +261,41 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
       appBar: AppBar(
         title: const Text(
           "导出数据",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
         elevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                color: colorScheme.primary, // ✅ 使用主题主色
+              ),
+            )
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
                 // 数据统计卡片
-                _buildStatsCard(),
+                _buildStatsCard(colorScheme),
                 const SizedBox(height: 24),
 
                 // 最近导出的文件
                 if (_lastExportPath != null) ...[
-                  _buildLastExportCard(),
+                  _buildLastExportCard(theme),
                   const SizedBox(height: 24),
                 ],
 
                 // 导出选项
-                _buildSectionTitle("训练记录"),
+                _buildSectionTitle("训练记录", theme),
                 const SizedBox(height: 12),
                 _buildExportOption(
                   icon: Icons.table_chart,
@@ -274,19 +303,21 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
                   subtitle: "适合用 Excel 分析，包含已完成的训练",
                   color: Colors.green,
                   onTap: _isExporting ? null : _exportWorkoutsCSV,
+                  theme: theme,
                 ),
                 const SizedBox(height: 12),
                 _buildExportOption(
                   icon: Icons.code,
                   title: "导出为 JSON",
-                  subtitle: "结构化数据，包含所有训练记录（含计划）",
+                  subtitle: "结构化数据,包含所有训练记录（含计划）",
                   color: Colors.blue,
                   onTap: _isExporting ? null : _exportWorkoutsJSON,
+                  theme: theme,
                 ),
 
                 const SizedBox(height: 24),
 
-                _buildSectionTitle("动作组合"),
+                _buildSectionTitle("动作组合", theme),
                 const SizedBox(height: 12),
                 _buildExportOption(
                   icon: Icons.folder_open,
@@ -294,19 +325,21 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
                   subtitle: "导出所有自定义的动作组合模板",
                   color: Colors.orange,
                   onTap: _isExporting ? null : _exportRoutinesJSON,
+                  theme: theme,
                 ),
 
                 const SizedBox(height: 24),
 
-                _buildSectionTitle("完整备份"),
+                _buildSectionTitle("完整备份", theme),
                 const SizedBox(height: 12),
                 _buildExportOption(
                   icon: Icons.backup,
                   title: "导出所有数据",
                   subtitle: "包含训练记录、计划和动作组合的完整备份",
-                  color: const Color(0xFF4F75FF),
+                  color: colorScheme.primary, // ✅ 使用主题主色
                   onTap: _isExporting ? null : _exportAllData,
                   isPrimary: true,
+                  theme: theme,
                 ),
 
                 const SizedBox(height: 24),
@@ -318,19 +351,19 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
     );
   }
 
-  Widget _buildStatsCard() {
+  Widget _buildStatsCard(ColorScheme colorScheme) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4F75FF), Color(0xFF6B8FFF)],
+        gradient: LinearGradient(
+          colors: [colorScheme.primary, colorScheme.secondary], // ✅ 使用主题颜色
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4F75FF).withOpacity(0.3),
+            color: colorScheme.primary.withOpacity(0.3), // ✅ 使用主题主色
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -369,11 +402,11 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
     );
   }
 
-  Widget _buildLastExportCard() {
+  Widget _buildLastExportCard(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor, // ✅ 使用主题卡片色
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.green.withOpacity(0.3)),
         boxShadow: [
@@ -402,14 +435,22 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
                   "上次导出的文件",
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+                  ),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.copy, size: 18),
+                icon: Icon(
+                  Icons.copy,
+                  size: 18,
+                  color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+                ),
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: _lastExportPath!));
                   _showMessage('路径已复制到剪贴板');
@@ -422,14 +463,14 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               _lastExportPath!,
               style: TextStyle(
                 fontSize: 11,
-                color: Colors.grey[700],
+                color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
                 fontFamily: 'monospace',
               ),
               maxLines: 2,
@@ -441,7 +482,7 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Text(
@@ -449,7 +490,7 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.bold,
-          color: Colors.grey[800],
+          color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
         ),
       ),
     );
@@ -461,11 +502,12 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
     required String subtitle,
     required Color color,
     required VoidCallback? onTap,
+    required ThemeData theme,
     bool isPrimary = false,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor, // ✅ 使用主题卡片色
         borderRadius: BorderRadius.circular(16),
         border: isPrimary ? Border.all(color: color, width: 2) : null,
         boxShadow: [
@@ -498,24 +540,31 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
+                      ),
                     ),
                   ],
                 ),
               ),
               if (_isExporting)
-                const SizedBox(
+                SizedBox(
                   width: 24,
                   height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: color,
+                  ),
                 )
               else
                 Icon(

@@ -31,7 +31,6 @@ class ExerciseCard<T> extends StatefulWidget {
 class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
   bool _localIsBodyweight = false;
 
-  // 获取动作名称
   String get exerciseName {
     final ex = widget.exercise;
     if (ex is WorkoutSessionLog) {
@@ -42,12 +41,10 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
     return "未命名动作";
   }
 
-  // 设置动作名称
   set exerciseName(String value) {
     final ex = widget.exercise;
     if (ex is WorkoutSessionLog) {
       ex.exerciseName = value;
-      // 自动识别部位（仅当部位为空或未知时）
       if (ex.targetPart == null ||
           ex.targetPart!.isEmpty ||
           ex.targetPart == 'unknown') {
@@ -64,7 +61,6 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
     widget.onChanged?.call();
   }
 
-  // 获取训练部位
   String get targetPart {
     final ex = widget.exercise;
     if (ex is WorkoutSessionLog) {
@@ -75,7 +71,6 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
     return 'unknown';
   }
 
-  // 设置训练部位
   set targetPart(String value) {
     final ex = widget.exercise;
     if (ex is WorkoutSessionLog) {
@@ -87,7 +82,6 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
     widget.onChanged?.call();
   }
 
-  // 获取训练组列表
   List<dynamic> get sets {
     final ex = widget.exercise;
     if (ex is WorkoutSessionLog) {
@@ -98,7 +92,6 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
     return [];
   }
 
-  // 是否为自重训练
   bool get isBodyweight {
     final ex = widget.exercise;
     if (ex is RoutineExercise) {
@@ -107,7 +100,6 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
     return _localIsBodyweight;
   }
 
-  // 设置自重状态
   void setBodyweight(bool value) {
     final ex = widget.exercise;
     if (ex is RoutineExercise) {
@@ -128,7 +120,6 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
     widget.onChanged?.call();
   }
 
-  // 计算总容量
   double _calculateVolume() {
     double total = 0;
     for (var set in sets) {
@@ -139,7 +130,6 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
     return total;
   }
 
-  // 美观的部位选择器
   void _showMuscleGroupPicker() {
     showModalBottomSheet(
       context: context,
@@ -157,13 +147,17 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     final muscleGroup = MuscleGroupService.getMuscleGroup(targetPart);
     final isUnknown = targetPart == 'unknown';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor, // ✅ 使用主题卡片色
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -197,9 +191,13 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
                             )
                           : Text(
                               exerciseName,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
+                                color: theme
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.color, // ✅ 使用主题文字色
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -276,12 +274,16 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
                           ),
                           decoration: BoxDecoration(
                             color: isBodyweight
-                                ? const Color(0xFF4F75FF).withOpacity(0.1)
+                                ? colorScheme.primary.withOpacity(
+                                    0.1,
+                                  ) // ✅ 使用主题主色
                                 : Colors.grey[100],
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
                               color: isBodyweight
-                                  ? const Color(0xFF4F75FF).withOpacity(0.5)
+                                  ? colorScheme.primary.withOpacity(
+                                      0.5,
+                                    ) // ✅ 使用主题主色
                                   : Colors.grey[300]!,
                               width: 1,
                             ),
@@ -295,7 +297,8 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
                                     : Icons.fitness_center,
                                 size: 12,
                                 color: isBodyweight
-                                    ? const Color(0xFF4F75FF)
+                                    ? colorScheme
+                                          .primary // ✅ 使用主题主色
                                     : Colors.grey[600],
                               ),
                               const SizedBox(width: 3),
@@ -304,7 +307,8 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: isBodyweight
-                                      ? const Color(0xFF4F75FF)
+                                      ? colorScheme
+                                            .primary // ✅ 使用主题主色
                                       : Colors.grey[600],
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -350,9 +354,8 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
               ],
             ),
           ),
-          Divider(height: 1, color: Colors.grey[200]),
-
-          // ...existing code... (组列表部分保持不变)
+          Divider(height: 1, color: theme.dividerColor), // ✅ 使用主题分割线色
+          // 组列表部分
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
             child: Column(
@@ -432,7 +435,11 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
                       },
                     );
                   } else {
-                    return _buildSetRowDisplay(setEntry.key, setEntry.value);
+                    return _buildSetRowDisplay(
+                      setEntry.key,
+                      setEntry.value,
+                      colorScheme,
+                    );
                   }
                 }),
 
@@ -472,7 +479,7 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
                         widget.onChanged?.call();
                       },
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF4F75FF),
+                        foregroundColor: colorScheme.primary, // ✅ 使用主题主色
                         side: BorderSide(color: Colors.grey[300]!),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -492,7 +499,10 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
     );
   }
 
-  Widget _buildSetRowDisplay(int index, dynamic set) {
+  Widget _buildSetRowDisplay(int index, dynamic set, ColorScheme colorScheme) {
+    // ✅ 在方法内部获取 theme
+    final theme = Theme.of(context);
+
     final weight = set.weight as double;
     final reps = set.reps as int;
     final volume = (weight * reps).toInt();
@@ -505,10 +515,11 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
             width: 50,
             child: Text(
               "${index + 1}",
-              style: const TextStyle(
+              style: TextStyle(
+                // ✅ 改为 TextStyle
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: theme.textTheme.bodyLarge?.color, // ✅ 现在可以访问 theme
               ),
             ),
           ),
@@ -516,14 +527,24 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
             child: Text(
               weight.toStringAsFixed(1).replaceAll(".0", ""),
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                // ✅ 添加颜色
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: theme.textTheme.bodyLarge?.color,
+              ),
             ),
           ),
           Expanded(
             child: Text(
               reps.toString(),
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                // ✅ 添加颜色
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: theme.textTheme.bodyLarge?.color,
+              ),
             ),
           ),
           if (widget.showVolume)
@@ -532,10 +553,10 @@ class _ExerciseCardState<T> extends State<ExerciseCard<T>> {
               child: Text(
                 volume.toString(),
                 textAlign: TextAlign.right,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF4F75FF),
+                  color: colorScheme.primary,
                 ),
               ),
             ),
@@ -557,10 +578,13 @@ class _MuscleGroupSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: theme.cardColor, // ✅ 使用主题卡片色
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -581,13 +605,20 @@ class _MuscleGroupSelector extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
             child: Row(
               children: [
-                const Text(
+                Text(
                   "选择训练部位",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: Icon(
+                    Icons.close,
+                    color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+                  ),
                   onPressed: () => Navigator.pop(context),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -617,7 +648,7 @@ class _MuscleGroupSelector extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isSelected
                           ? group.color.withOpacity(0.15)
-                          : Colors.grey[50],
+                          : theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isSelected ? group.color : Colors.grey[200]!,
@@ -644,7 +675,10 @@ class _MuscleGroupSelector extends StatelessWidget {
                                       : FontWeight.w600,
                                   color: isSelected
                                       ? group.color
-                                      : Colors.black87,
+                                      : theme
+                                            .textTheme
+                                            .bodyLarge
+                                            ?.color, // ✅ 使用主题文字色
                                 ),
                               ),
                             ],
@@ -711,15 +745,22 @@ class _ExerciseNameInputState extends State<_ExerciseNameInput> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
+        color: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
         borderRadius: BorderRadius.circular(8),
       ),
       child: TextField(
         controller: _controller,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+        ),
         decoration: const InputDecoration(
           border: InputBorder.none,
           hintText: "输入动作名称",
@@ -732,7 +773,7 @@ class _ExerciseNameInputState extends State<_ExerciseNameInput> {
   }
 }
 
-// 组输入行组件（保持不变）
+// 组输入行组件
 class _SetRowInput extends StatefulWidget {
   final int index;
   final dynamic set;
@@ -790,6 +831,10 @@ class _SetRowInputState extends State<_SetRowInput> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
@@ -798,10 +843,10 @@ class _SetRowInputState extends State<_SetRowInput> {
             width: 50,
             child: Text(
               "${widget.index + 1}",
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: theme.textTheme.bodyLarge?.color,
               ),
             ),
           ),
@@ -811,7 +856,7 @@ class _SetRowInputState extends State<_SetRowInput> {
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
+                color: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
                 borderRadius: BorderRadius.circular(8),
               ),
               child: widget.isBodyweight
@@ -829,9 +874,10 @@ class _SetRowInputState extends State<_SetRowInput> {
                       controller: _weightCtrl,
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
+                        color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                       ),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
@@ -850,16 +896,17 @@ class _SetRowInputState extends State<_SetRowInput> {
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
+                color: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
                 borderRadius: BorderRadius.circular(8),
               ),
               child: TextFormField(
                 controller: _repsCtrl,
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
+                  color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                 ),
                 decoration: const InputDecoration(
                   border: InputBorder.none,
@@ -878,10 +925,10 @@ class _SetRowInputState extends State<_SetRowInput> {
               child: Text(
                 "${(widget.set.weight * widget.set.reps).toInt()}",
                 textAlign: TextAlign.right,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF4F75FF),
+                  color: colorScheme.primary, // ✅ 使用主题主色
                 ),
               ),
             ),

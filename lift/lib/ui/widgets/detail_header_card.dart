@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 /// 支持自定义颜色、图标、统计项
 class DetailHeaderCard extends StatelessWidget {
   /// 卡片主色调（用于渐变）
-  final Color primaryColor;
+  final Color? primaryColor;
 
   /// 顶部图标
   final IconData icon;
@@ -32,7 +32,7 @@ class DetailHeaderCard extends StatelessWidget {
 
   const DetailHeaderCard({
     super.key,
-    required this.primaryColor,
+    this.primaryColor, // ✅ 改为可选参数
     required this.icon,
     required this.typeLabel,
     this.typeInfo,
@@ -45,20 +45,27 @@ class DetailHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    // ✅ 使用传入的颜色或主题主色
+    final cardPrimaryColor = primaryColor ?? colorScheme.primary;
+
     // 计算次要颜色（更亮）
-    final secondaryColor = Color.lerp(primaryColor, Colors.white, 0.2)!;
+    final secondaryColor = Color.lerp(cardPrimaryColor, Colors.white, 0.2)!;
 
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [primaryColor, secondaryColor],
+          colors: [cardPrimaryColor, secondaryColor], // ✅ 使用动态颜色
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: primaryColor.withOpacity(0.3),
+            color: cardPrimaryColor.withOpacity(0.3), // ✅ 使用动态颜色
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -113,9 +120,9 @@ class DetailHeaderCard extends StatelessWidget {
           // 主要内容区域
           Container(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              color: theme.cardColor, // ✅ 使用主题卡片色
+              borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(20),
                 bottomRight: Radius.circular(20),
               ),
@@ -131,15 +138,16 @@ class DetailHeaderCard extends StatelessWidget {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F7FA),
+                      color: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: TextField(
                       controller: titleController,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         height: 1.2,
+                        color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                       ),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
@@ -153,10 +161,11 @@ class DetailHeaderCard extends StatelessWidget {
                 else
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       height: 1.2,
+                      color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                     ),
                   ),
 

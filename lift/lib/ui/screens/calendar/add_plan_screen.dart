@@ -92,21 +92,29 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
       appBar: AppBar(
         title: const Text(
           "添加训练计划",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
         elevation: 0,
         actions: [
           TextButton(
             onPressed: _savePlan,
-            child: const Text(
+            child: Text(
               "保存",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: colorScheme.primary, // ✅ 使用主题主色
+              ),
             ),
           ),
         ],
@@ -120,7 +128,7 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.cardColor, // ✅ 使用主题卡片色
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
@@ -205,7 +213,7 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: theme.cardColor, // ✅ 使用主题卡片色
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -244,15 +252,16 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F7FA),
+                    color: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: TextField(
                     controller: _nameController,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       height: 1.2,
+                      color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                     ),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
@@ -277,7 +286,7 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
+                      color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -287,15 +296,15 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF4F75FF).withOpacity(0.1),
+                      color: colorScheme.primary.withOpacity(0.1), // ✅ 使用主题主色
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       "${_exercises.length}",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF4F75FF),
+                        color: colorScheme.primary, // ✅ 使用主题主色
                       ),
                     ),
                   ),
@@ -327,7 +336,7 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
               margin: const EdgeInsets.only(top: 20),
               padding: const EdgeInsets.all(40),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: theme.cardColor, // ✅ 使用主题卡片色
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -370,7 +379,7 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _addExercise,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4F75FF),
+                    backgroundColor: colorScheme.primary, // ✅ 使用主题主色
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -395,12 +404,12 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _showImportRoutineDialog,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF4F75FF),
+                    backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
+                    foregroundColor: colorScheme.primary, // ✅ 使用主题主色
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(
-                        color: Color(0xFF4F75FF),
+                      side: BorderSide(
+                        color: colorScheme.primary, // ✅ 使用主题主色
                         width: 2,
                       ),
                     ),
@@ -553,7 +562,6 @@ class _AddPlanScreenState extends State<AddPlanScreen> {
   }
 }
 
-// ✅ 美观的动作组合选择器（底部弹窗）
 class _RoutineSelector extends StatelessWidget {
   final List<WorkoutRoutine> routines;
   final ValueChanged<WorkoutRoutine> onSelected;
@@ -562,13 +570,17 @@ class _RoutineSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.75,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: theme.cardColor, // ✅ 使用主题卡片色
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -592,24 +604,31 @@ class _RoutineSelector extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4F75FF).withOpacity(0.1),
+                    color: colorScheme.primary.withOpacity(0.1), // ✅ 使用主题主色
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.folder_open,
-                    color: Color(0xFF4F75FF),
+                    color: colorScheme.primary, // ✅ 使用主题主色
                     size: 24,
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
                     "选择动作组合",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+                    ),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: Icon(
+                    Icons.close,
+                    color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+                  ),
                   onPressed: () => Navigator.pop(context),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -633,7 +652,7 @@ class _RoutineSelector extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.grey[50],
+                      color: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: Colors.grey[200]!),
                     ),
@@ -645,8 +664,10 @@ class _RoutineSelector extends StatelessWidget {
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                const Color(0xFF4F75FF).withOpacity(0.8),
-                                const Color(0xFF6B8FFF),
+                                colorScheme.primary.withOpacity(
+                                  0.8,
+                                ), // ✅ 使用主题主色
+                                colorScheme.secondary, // ✅ 使用主题次色
                               ],
                             ),
                             borderRadius: BorderRadius.circular(12),
@@ -666,9 +687,13 @@ class _RoutineSelector extends StatelessWidget {
                             children: [
                               Text(
                                 routine.name,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
+                                  color: theme
+                                      .textTheme
+                                      .bodyLarge
+                                      ?.color, // ✅ 使用主题文字色
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -682,16 +707,16 @@ class _RoutineSelector extends StatelessWidget {
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: const Color(
-                                        0xFF4F75FF,
-                                      ).withOpacity(0.1),
+                                      color: colorScheme.primary.withOpacity(
+                                        0.1,
+                                      ), // ✅ 使用主题主色
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
                                       "${routine.exercises.length} 个动作",
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12,
-                                        color: Color(0xFF4F75FF),
+                                        color: colorScheme.primary, // ✅ 使用主题主色
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -721,13 +746,13 @@ class _RoutineSelector extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: theme.cardColor, // ✅ 使用主题卡片色
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.arrow_forward_ios,
                             size: 16,
-                            color: Color(0xFF4F75FF),
+                            color: colorScheme.primary, // ✅ 使用主题主色
                           ),
                         ),
                       ],

@@ -4,7 +4,7 @@ import '../../../data/models/workout.dart';
 import '../../../data/isar_service.dart';
 import '../../widgets/exercise_card.dart';
 import '../../widgets/detail_header_card.dart';
-import 'workout_session_screen.dart'; // ✅ 添加导入
+import 'workout_session_screen.dart';
 
 class PlanDetailScreen extends StatefulWidget {
   final int sessionId;
@@ -77,7 +77,6 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
     return copy;
   }
 
-  // ✅ 判断是否是今天的计划
   bool _isTodayPlan() {
     if (_session == null || _session!.status != 'planned') return false;
     final now = DateTime.now();
@@ -92,24 +91,32 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     if (_isLoading || _session == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
         appBar: AppBar(
           title: const Text("加载中..."),
-          backgroundColor: Colors.white,
+          backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
           elevation: 0,
         ),
-        body: const Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: CircularProgressIndicator(
+            color: colorScheme.primary, // ✅ 使用主题主色
+          ),
+        ),
       );
     }
 
     final isPlanned = _session!.status == 'planned';
     final isCompleted = _session!.status == 'completed';
-    final isTodayPlan = _isTodayPlan(); // ✅ 判断是否是今天的计划
+    final isTodayPlan = _isTodayPlan();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -121,7 +128,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
           isPlanned ? "训练计划详情" : "训练记录详情",
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
         elevation: 0,
         actions: [
           if (isPlanned)
@@ -137,9 +144,10 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
               },
               child: Text(
                 _isEditing ? "保存" : "编辑",
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
+                  color: colorScheme.primary, // ✅ 使用主题主色
                 ),
               ),
             ),
@@ -154,7 +162,6 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
               16,
               16,
               16,
-              // ✅ 根据按钮数量调整底部padding
               isTodayPlan && !_isEditing ? 140 : 80,
             ),
             children: [
@@ -169,7 +176,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
+                        color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -179,15 +186,15 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF4F75FF).withOpacity(0.1),
+                        color: colorScheme.primary.withOpacity(0.1), // ✅ 使用主题主色
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         "${_session!.exercises.length}",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF4F75FF),
+                          color: colorScheme.primary, // ✅ 使用主题主色
                         ),
                       ),
                     ),
@@ -198,7 +205,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: theme.cardColor, // ✅ 使用主题卡片色
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
@@ -237,20 +244,22 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                 }),
             ],
           ),
-          // ✅ 底部按钮区域
           Positioned(
             left: 16,
             right: 16,
             bottom: 16,
-            child: _buildBottomButtons(isPlanned, isTodayPlan),
+            child: _buildBottomButtons(isPlanned, isTodayPlan, colorScheme),
           ),
         ],
       ),
     );
   }
 
-  // ✅ 构建底部按钮
-  Widget _buildBottomButtons(bool isPlanned, bool isTodayPlan) {
+  Widget _buildBottomButtons(
+    bool isPlanned,
+    bool isTodayPlan,
+    ColorScheme colorScheme,
+  ) {
     // 编辑模式：显示添加动作和删除按钮
     if (isPlanned && _isEditing) {
       return Row(
@@ -261,7 +270,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
               child: ElevatedButton.icon(
                 onPressed: _addExercise,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4F75FF),
+                  backgroundColor: colorScheme.primary, // ✅ 使用主题主色
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -308,12 +317,11 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
       );
     }
 
-    // ✅ 今天的计划：显示开始训练和删除按钮
+    // 今天的计划：显示开始训练和删除按钮
     if (isTodayPlan) {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 第一行：开始训练和删除按钮（各占一半）
           Row(
             children: [
               Expanded(
@@ -379,7 +387,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
       );
     }
 
-    // ✅ 其他情况（非今天的计划或已完成的记录）：只显示删除按钮
+    // 其他情况：只显示删除按钮
     return SizedBox(
       width: double.infinity,
       height: 50,
@@ -414,12 +422,13 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
       'zh_CN',
     ).format(_session!.startTime);
 
+    // ✅ 保持状态颜色不变（绿色=完成，橙色=计划）
     final List<DetailStatItem> stats = [
       DetailStatItem(
         icon: Icons.fitness_center,
         value: "${_session!.exercises.length}",
         label: "动作数",
-        color: const Color(0xFF4F75FF),
+        color: Theme.of(context).colorScheme.primary, // ✅ 使用主题主色
       ),
     ];
 
@@ -442,10 +451,12 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
 
     return DetailHeaderCard(
       primaryColor: isCompleted
-          ? Colors.green
+          ? Colors
+                .green // ✅ 保持绿色表示完成
           : isPlanned
-          ? Colors.orange
-          : const Color(0xFF4F75FF),
+          ? Colors
+                .orange // ✅ 保持橙色表示计划
+          : Theme.of(context).colorScheme.primary, // ✅ 其他使用主题色
       icon: isCompleted
           ? Icons.check_circle
           : isPlanned
@@ -525,23 +536,36 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
   }
 
   void _deletePlan() async {
+    // ✅ 获取主题
+    final theme = Theme.of(context);
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text(
+        backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
+        title: Text(
           "确认删除",
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+          ),
         ),
         content: Text(
           _session!.status == 'planned'
               ? "确定要删除这个训练计划吗？删除后无法恢复。"
               : "确定要删除这条训练记录吗？删除后无法恢复。",
+          style: TextStyle(
+            color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
+          ),
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text("取消"),
+            child: Text(
+              "取消",
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -569,14 +593,11 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
     }
   }
 
-  // ✅ 开始训练方法
   void _startWorkout() async {
-    // ✅ 开始训练前，更新开始时间为当前时间
     final now = DateTime.now();
     _session!.startTime = now;
     _session!.status = 'in_progress';
 
-    // 先保存更新后的状态
     final isar = await IsarService().db;
     await isar.writeTxn(() async {
       await isar.workoutSessions.put(_session!);
@@ -592,7 +613,6 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
     );
 
     if (result == true && mounted) {
-      // 训练完成后返回首页
       Navigator.pop(context, true);
     }
   }

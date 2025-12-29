@@ -40,7 +40,6 @@ class _HomeScreenState extends State<HomeScreen> {
         .statusEqualTo('planned')
         .findAll();
 
-    // ✅ 加载最近5条用于显示
     final recentCompleted = await isar.workoutSessions
         .filter()
         .statusEqualTo('completed')
@@ -48,7 +47,6 @@ class _HomeScreenState extends State<HomeScreen> {
         .limit(5)
         .findAll();
 
-    // ✅ 加载本月所有数据用于统计
     final monthStart = DateTime(now.year, now.month, 1);
     final allMonthSessions = await isar.workoutSessions
         .filter()
@@ -56,7 +54,6 @@ class _HomeScreenState extends State<HomeScreen> {
         .startTimeGreaterThan(monthStart)
         .findAll();
 
-    // ✅ 加载本周所有数据用于统计
     final weekStart = now.subtract(Duration(days: now.weekday - 1));
     final weekStartDate = DateTime(
       weekStart.year,
@@ -80,26 +77,34 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF5F7FA),
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: colorScheme.primary, // ✅ 使用主题主色
+          ),
+        ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _loadData,
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _buildWelcomeHeader(),
+              _buildWelcomeHeader(theme),
               const SizedBox(height: 24),
-              _buildTodayTrainingCard(),
+              _buildTodayTrainingCard(colorScheme),
               const SizedBox(height: 20),
-              _buildQuickStats(),
+              _buildQuickStats(theme, colorScheme),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -111,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
+                        color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                       ),
                     ),
                   ),
@@ -134,14 +139,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF4F75FF),
+                        foregroundColor: colorScheme.primary, // ✅ 使用主题主色
                       ),
                     ),
                 ],
               ),
               const SizedBox(height: 12),
-              _buildRecentSessions(),
-              const SizedBox(height: 20), // ✅ 减少底部间距
+              _buildRecentSessions(theme, colorScheme),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -149,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildWelcomeHeader() {
+  Widget _buildWelcomeHeader(ThemeData theme) {
     final hour = DateTime.now().hour;
     String greeting;
     if (hour < 12) {
@@ -172,21 +177,24 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           "准备好锻炼了吗？",
-          style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildTodayTrainingCard() {
+  Widget _buildTodayTrainingCard(ColorScheme colorScheme) {
     final hasPlan = _todayPlan != null;
 
     return InkWell(
       onTap: () async {
         if (hasPlan) {
-          // ✅ 有计划时进入详情页
           final result = await Navigator.push(
             context,
             MaterialPageRoute(
@@ -197,7 +205,6 @@ class _HomeScreenState extends State<HomeScreen> {
             _loadData();
           }
         } else {
-          // 无计划时创建计划
           final now = DateTime.now();
           final today = DateTime(now.year, now.month, now.day);
           final result = await Navigator.push(
@@ -217,17 +224,19 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: hasPlan
-                ? [const Color(0xFF4F75FF), const Color(0xFF6B8FFF)]
-                : [const Color(0xFFFF6B6B), const Color(0xFFFF8E53)],
+                ? [colorScheme.primary, colorScheme.secondary] // ✅ 使用主题颜色
+                : [
+                    const Color(0xFFFF6B6B),
+                    const Color(0xFFFF8E53),
+                  ], // 无计划时保持红色
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color:
-                  (hasPlan ? const Color(0xFF4F75FF) : const Color(0xFFFF6B6B))
-                      .withOpacity(0.3),
+              color: (hasPlan ? colorScheme.primary : const Color(0xFFFF6B6B))
+                  .withOpacity(0.3), // ✅ 使用主题主色
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -260,7 +269,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const Spacer(),
-                // ✅ 更新提示文字
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -409,7 +417,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return (_todayPlan!.exercises.length * 10).toString();
   }
 
-  Widget _buildQuickStats() {
+  Widget _buildQuickStats(ThemeData theme, ColorScheme colorScheme) {
     return Row(
       children: [
         Expanded(
@@ -431,6 +439,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _getThisWeekStats(),
               "本周训练",
               Colors.orange,
+              theme,
             ),
           ),
         ),
@@ -454,6 +463,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _getThisMonthStats(),
               "本月训练",
               Colors.red,
+              theme,
             ),
           ),
         ),
@@ -466,11 +476,12 @@ class _HomeScreenState extends State<HomeScreen> {
     Map<String, int> stats,
     String label,
     Color color,
+    ThemeData theme,
   ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor, // ✅ 使用主题卡片色
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -543,7 +554,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Map<String, int> _getThisWeekStats() {
-    // ✅ 使用完整的本周数据
     final uniqueDays = _allWeekSessions
         .map((s) {
           final date = s.startTime;
@@ -556,7 +566,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Map<String, int> _getThisMonthStats() {
-    // ✅ 使用完整的本月数据
     final uniqueDays = _allMonthSessions
         .map((s) {
           final date = s.startTime;
@@ -568,12 +577,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return {'days': uniqueDays, 'times': _allMonthSessions.length};
   }
 
-  Widget _buildRecentSessions() {
+  Widget _buildRecentSessions(ThemeData theme, ColorScheme colorScheme) {
     if (_recentSessions.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardColor, // ✅ 使用主题卡片色
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -594,7 +603,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.cardColor, // ✅ 使用主题卡片色
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -623,7 +632,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             title: Text(
               session.note ?? "训练",
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+              ),
             ),
             subtitle: Padding(
               padding: const EdgeInsets.only(top: 4),
@@ -638,10 +651,10 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   "${session.totalVolume.toInt()}kg",
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF4F75FF),
+                    color: colorScheme.primary, // ✅ 使用主题主色
                   ),
                 ),
                 Text(

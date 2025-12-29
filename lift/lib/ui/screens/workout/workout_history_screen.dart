@@ -63,33 +63,42 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
       appBar: AppBar(
         title: Text(widget.title ?? '训练记录'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
         elevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                color: colorScheme.primary, // ✅ 使用主题主色
+              ),
+            )
           : _sessions.isEmpty
-          ? _buildEmptyState()
+          ? _buildEmptyState(theme)
           : RefreshIndicator(
               onRefresh: _loadData,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  _buildStatsCard(),
+                  _buildStatsCard(colorScheme),
                   const SizedBox(height: 20),
-                  ..._sessions.map((session) => _buildSessionCard(session)),
+                  ..._sessions.map(
+                    (session) => _buildSessionCard(session, theme, colorScheme),
+                  ),
                 ],
               ),
             ),
     );
   }
 
-  Widget _buildStatsCard() {
+  Widget _buildStatsCard(ColorScheme colorScheme) {
     final totalSessions = _sessions.length;
     final totalVolume = _sessions.fold<double>(
       0,
@@ -112,15 +121,15 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4F75FF), Color(0xFF6B8FFF)],
+        gradient: LinearGradient(
+          colors: [colorScheme.primary, colorScheme.secondary], // ✅ 使用主题颜色
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4F75FF).withOpacity(0.3),
+            color: colorScheme.primary.withOpacity(0.3), // ✅ 使用主题主色
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -201,7 +210,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ThemeData theme) {
     String emptyText;
     if (widget.filterType == 'week') {
       emptyText = '本周还没有训练记录';
@@ -219,18 +228,25 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
           const SizedBox(height: 16),
           Text(
             emptyText,
-            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            style: TextStyle(
+              fontSize: 16,
+              color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSessionCard(WorkoutSession session) {
+  Widget _buildSessionCard(
+    WorkoutSession session,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor, // ✅ 使用主题卡片色
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -252,13 +268,20 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
         ),
         title: Text(
           session.note ?? "训练",
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+          ),
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Text(
             DateFormat('MM月dd日 HH:mm', 'zh_CN').format(session.startTime),
-            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            style: TextStyle(
+              fontSize: 13,
+              color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
+            ),
           ),
         ),
         trailing: Column(
@@ -267,15 +290,18 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
           children: [
             Text(
               "${session.totalVolume.toInt()}kg",
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF4F75FF),
+                color: colorScheme.primary, // ✅ 使用主题主色
               ),
             ),
             Text(
               "${session.duration}分钟",
-              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
+              ),
             ),
           ],
         ),

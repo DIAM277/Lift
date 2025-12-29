@@ -34,16 +34,29 @@ class AppThemeData {
       primaryColor: primaryColor,
       scaffoldBackgroundColor: backgroundColor,
       cardColor: cardColor,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryColor,
+      // ✅ 使用手动构建的 ColorScheme，确保颜色准确
+      colorScheme: ColorScheme(
         brightness: brightness,
-        secondary: secondaryColor,
+        primary: primaryColor, // ✅ 直接使用我们定义的主色
+        onPrimary: Colors.white,
+        secondary: secondaryColor, // ✅ 直接使用我们定义的次色
+        onSecondary: Colors.white,
+        error: const Color(0xFFE74C3C),
+        onError: Colors.white,
+        surface: cardColor, // ✅ 卡片颜色
+        onSurface: textColor, // ✅ 文字颜色
+        surfaceContainerHighest: backgroundColor, // ✅ 背景颜色
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: cardColor,
         foregroundColor: textColor,
         elevation: 0,
         centerTitle: false,
+        titleTextStyle: TextStyle(
+          color: textColor,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       cardTheme: CardThemeData(
         color: cardColor,
@@ -61,6 +74,9 @@ class AppThemeData {
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         ),
       ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(foregroundColor: primaryColor),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: backgroundColor,
@@ -68,10 +84,35 @@ class AppThemeData {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: primaryColor, width: 2),
+        ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,
         ),
+      ),
+      dividerColor: brightness == Brightness.light
+          ? Colors.grey[200]
+          : Colors.grey[800],
+      // ✅ 定义文字主题
+      textTheme: TextTheme(
+        displayLarge: TextStyle(color: textColor),
+        displayMedium: TextStyle(color: textColor),
+        displaySmall: TextStyle(color: textColor),
+        headlineLarge: TextStyle(color: textColor),
+        headlineMedium: TextStyle(color: textColor),
+        headlineSmall: TextStyle(color: textColor),
+        titleLarge: TextStyle(color: textColor),
+        titleMedium: TextStyle(color: textColor),
+        titleSmall: TextStyle(color: textColor),
+        bodyLarge: TextStyle(color: textColor),
+        bodyMedium: TextStyle(color: textColor),
+        bodySmall: TextStyle(color: textColor),
+        labelLarge: TextStyle(color: textColor),
+        labelMedium: TextStyle(color: textColor),
+        labelSmall: TextStyle(color: textColor),
       ),
     );
   }
@@ -79,14 +120,14 @@ class AppThemeData {
 
 /// 预定义主题集合
 class AppThemes {
-  // 默认蓝色主题
+  // ✅ 默认蓝色主题 - 保持原来的鲜艳颜色
   static const defaultTheme = AppThemeData(
     id: 'default',
     name: '经典蓝',
     description: '清爽专业的蓝色主题',
-    primaryColor: Color(0xFF4F75FF),
-    secondaryColor: Color(0xFF6B8FFF),
-    backgroundColor: Color(0xFFF5F7FA),
+    primaryColor: Color(0xFF4F75FF), // ✅ 保持原来的蓝色
+    secondaryColor: Color(0xFF6B8FFF), // ✅ 保持原来的浅蓝色
+    backgroundColor: Color(0xFFF5F7FA), // ✅ 保持原来的浅灰背景
     cardColor: Colors.white,
     textColor: Color(0xFF1A1A1A),
     brightness: Brightness.light,

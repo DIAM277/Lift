@@ -9,27 +9,34 @@ class ThemeSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentTheme = ref.watch(themeProvider);
+    
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor,  // ✅ 使用主题背景色
       appBar: AppBar(
         title: const Text(
           "主题设置",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: theme.cardColor,  // ✅ 使用主题卡片色
         elevation: 0,
         actions: [
           // 重置按钮
           TextButton.icon(
             onPressed: () {
               ref.read(themeProvider.notifier).resetTheme();
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('已重置为默认主题')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('已重置为默认主题'),
+                  backgroundColor: colorScheme.primary,  // ✅ 使用主题主色
+                ),
+              );
             },
-            icon: const Icon(Icons.refresh, size: 18),
-            label: const Text('重置'),
+            icon: Icon(Icons.refresh, size: 18, color: colorScheme.primary),  // ✅ 使用主题主色
+            label: Text('重置', style: TextStyle(color: colorScheme.primary)),  // ✅ 使用主题主色
           ),
         ],
       ),
@@ -49,6 +56,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                 .where((t) => t.brightness == Brightness.light)
                 .toList(),
             currentTheme,
+            theme,
           ),
           const SizedBox(height: 24),
 
@@ -61,6 +69,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                 .where((t) => t.brightness == Brightness.dark)
                 .toList(),
             currentTheme,
+            theme,
           ),
           const SizedBox(height: 24),
         ],
@@ -148,6 +157,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
     String title,
     List<AppThemeData> themes,
     AppThemeData currentTheme,
+    ThemeData theme,  // ✅ 接收主题
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,13 +169,18 @@ class ThemeSettingsScreen extends ConsumerWidget {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
+              color: theme.textTheme.bodyLarge?.color,  // ✅ 使用主题文字色
             ),
           ),
         ),
         ...themes.map(
-          (theme) =>
-              _buildThemeCard(context, ref, theme, theme.id == currentTheme.id),
+          (themeData) => _buildThemeCard(
+            context,
+            ref,
+            themeData,
+            themeData.id == currentTheme.id,
+            theme,  // ✅ 传递主题
+          ),
         ),
       ],
     );
@@ -174,16 +189,17 @@ class ThemeSettingsScreen extends ConsumerWidget {
   Widget _buildThemeCard(
     BuildContext context,
     WidgetRef ref,
-    AppThemeData theme,
+    AppThemeData themeData,
     bool isSelected,
+    ThemeData theme,  // ✅ 接收主题
   ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,  // ✅ 使用主题卡片色
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isSelected ? theme.primaryColor : Colors.transparent,
+          color: isSelected ? themeData.primaryColor : Colors.transparent,
           width: 2,
         ),
         boxShadow: [
@@ -196,12 +212,12 @@ class ThemeSettingsScreen extends ConsumerWidget {
       ),
       child: InkWell(
         onTap: () {
-          ref.read(themeProvider.notifier).setTheme(theme);
+          ref.read(themeProvider.notifier).setTheme(themeData);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('已切换至「${theme.name}」主题'),
+              content: Text('已切换至「${themeData.name}」主题'),
               duration: const Duration(seconds: 1),
-              backgroundColor: theme.primaryColor,
+              backgroundColor: themeData.primaryColor,
             ),
           );
         },
@@ -216,13 +232,13 @@ class ThemeSettingsScreen extends ConsumerWidget {
                 height: 60,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [theme.primaryColor, theme.secondaryColor],
+                    colors: [themeData.primaryColor, themeData.secondaryColor],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(theme.icon, color: Colors.white, size: 28),
+                child: Icon(themeData.icon, color: Colors.white, size: 28),
               ),
               const SizedBox(width: 16),
               // 主题信息
@@ -231,26 +247,27 @@ class ThemeSettingsScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      theme.name,
-                      style: const TextStyle(
+                      themeData.name,
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: theme.textTheme.bodyLarge?.color,  // ✅ 使用主题文字色
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      theme.description,
+                      themeData.description,
                       style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 8),
                     // 颜色点
                     Row(
                       children: [
-                        _buildColorDot(theme.primaryColor),
+                        _buildColorDot(themeData.primaryColor),
                         const SizedBox(width: 6),
-                        _buildColorDot(theme.secondaryColor),
+                        _buildColorDot(themeData.secondaryColor),
                         const SizedBox(width: 6),
-                        _buildColorDot(theme.backgroundColor),
+                        _buildColorDot(themeData.backgroundColor),
                       ],
                     ),
                   ],
@@ -261,7 +278,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: theme.primaryColor,
+                    color: themeData.primaryColor,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.check, color: Colors.white, size: 20),

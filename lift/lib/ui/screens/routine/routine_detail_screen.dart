@@ -51,7 +51,6 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
     }
   }
 
-  // ✅ 修复深拷贝，包含 targetPart
   WorkoutRoutine _deepCopyRoutine(WorkoutRoutine original) {
     final copy = WorkoutRoutine()
       ..id = original.id
@@ -60,9 +59,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
       ..exercises = original.exercises.map((exercise) {
         return RoutineExercise()
           ..exerciseName = exercise.exerciseName
-          ..targetPart =
-              exercise.targetPart ??
-              'unknown' // ✅ 修复：复制部位信息
+          ..targetPart = exercise.targetPart ?? 'unknown'
           ..isBodyweight = exercise.isBodyweight
           ..sets = exercise.sets.map((set) {
             return RoutineSet()
@@ -76,25 +73,32 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     if (_isLoading || _routine == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
         appBar: AppBar(
           title: const Text("加载中..."),
-          backgroundColor: Colors.white,
+          backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
           elevation: 0,
         ),
-        body: const Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: CircularProgressIndicator(
+            color: colorScheme.primary, // ✅ 使用主题主色
+          ),
+        ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            // ✅ 返回时保存（如果在编辑状态）
             if (_isEditing) {
               _updateRoutine(silent: true);
             }
@@ -105,7 +109,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
           "动作组合详情",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
         elevation: 0,
         actions: [
           TextButton(
@@ -120,7 +124,11 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
             },
             child: Text(
               _isEditing ? "保存" : "编辑",
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: colorScheme.primary, // ✅ 使用主题主色
+              ),
             ),
           ),
         ],
@@ -143,7 +151,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
+                        color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -153,15 +161,15 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF4F75FF).withOpacity(0.1),
+                        color: colorScheme.primary.withOpacity(0.1), // ✅ 使用主题主色
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         "${_routine!.exercises.length}",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF4F75FF),
+                          color: colorScheme.primary, // ✅ 使用主题主色
                         ),
                       ),
                     ),
@@ -172,7 +180,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: theme.cardColor, // ✅ 使用主题卡片色
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
@@ -224,7 +232,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
                       child: ElevatedButton.icon(
                         onPressed: _addExercise,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4F75FF),
+                          backgroundColor: colorScheme.primary, // ✅ 使用主题主色
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -279,8 +287,11 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
   }
 
   Widget _buildHeaderCard() {
+    // ✅ 获取主题
+    final colorScheme = Theme.of(context).colorScheme;
+
     return DetailHeaderCard(
-      primaryColor: const Color(0xFF4F75FF),
+      // ✅ 不传 primaryColor，让组件使用主题色
       icon: Icons.folder_special,
       typeLabel: "动作组合",
       title: _routine!.name,
@@ -294,7 +305,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
           icon: Icons.fitness_center,
           value: "${_routine!.exercises.length}",
           label: "动作数",
-          color: const Color(0xFF4F75FF),
+          color: colorScheme.primary, // ✅ 使用主题主色
         ),
         DetailStatItem(
           icon: Icons.list_alt,
@@ -318,8 +329,7 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
       _routine!.exercises.add(
         RoutineExercise()
           ..exerciseName = "新动作"
-          ..targetPart =
-              'unknown' // ✅ 添加默认值
+          ..targetPart = 'unknown'
           ..isBodyweight = false
           ..sets = [
             RoutineSet()
@@ -340,7 +350,6 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
     });
   }
 
-  // ✅ 修改保存方法，支持静默保存
   void _updateRoutine({bool silent = false}) async {
     if (_routine!.name.isEmpty) {
       if (!silent) {
@@ -376,19 +385,34 @@ class _RoutineDetailScreenState extends State<RoutineDetailScreen> {
   }
 
   void _deleteRoutine() async {
+    // ✅ 获取主题
+    final theme = Theme.of(context);
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text(
+        backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
+        title: Text(
           "确认删除",
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+          ),
         ),
-        content: const Text("确定要删除这个动作组合吗？删除后无法恢复。"),
+        content: Text(
+          "确定要删除这个动作组合吗？删除后无法恢复。",
+          style: TextStyle(
+            color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
+          ),
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text("取消"),
+            child: Text(
+              "取消",
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),

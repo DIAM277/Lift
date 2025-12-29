@@ -5,7 +5,7 @@ import 'package:lift/ui/screens/profile/statistics_screen.dart';
 import 'package:lift/ui/screens/profile/theme_setting_screen.dart';
 import '../../../data/isar_service.dart';
 import '../../../data/models/workout.dart';
-import '../../../data/models/routine.dart'; // ✅ 添加这个导入
+import '../../../data/models/routine.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -58,10 +58,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  // ✅ 删除所有数据的方法
+  // 删除所有数据的方法
   Future<void> _deleteAllData() async {
     final isar = await IsarService().db;
-
+    
     await isar.writeTxn(() async {
       // 删除所有训练记录
       await isar.workoutSessions.clear();
@@ -74,12 +74,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('所有数据已删除'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('所有数据已删除'),
+          backgroundColor: Colors.green,
+        ),
       );
     }
   }
 
-  // ✅ 显示删除确认对话框
+  // 显示删除确认对话框
   void _showDeleteConfirmDialog() {
     showDialog(
       context: context,
@@ -88,7 +91,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Icon(Icons.warning, color: Colors.red, size: 28),
             SizedBox(width: 12),
-            Text("危险操作", style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              "危险操作",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: const Column(
@@ -97,7 +103,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Text(
               "确定要删除所有数据吗？",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             SizedBox(height: 12),
             Text(
@@ -115,7 +124,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -132,7 +143,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text("确认删除", style: TextStyle(color: Colors.white)),
+            child: const Text(
+              "确认删除",
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -141,8 +155,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor,  // ✅ 使用主题背景色
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _loadStats,
@@ -150,134 +168,154 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.all(16),
             children: [
               // 页面标题
-              const Padding(
-                padding: EdgeInsets.only(left: 4, bottom: 24),
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 24),
                 child: Text(
                   "我的",
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: theme.textTheme.displayLarge?.color,  // ✅ 使用主题文字色
+                  ),
                 ),
               ),
 
               // 用户信息卡片
-              _buildUserInfoCard(),
+              _buildUserInfoCard(theme, colorScheme),
               const SizedBox(height: 20),
 
               // 训练统计卡片
-              _buildStatsCard(),
+              _buildStatsCard(theme, colorScheme),
               const SizedBox(height: 20),
 
               // 功能菜单
-              _buildMenuSection("数据管理", [
-                _MenuItem(
-                  icon: Icons.cloud_upload,
-                  title: "备份数据",
-                  subtitle: "将数据备份到云端",
-                  onTap: () {
-                    _showComingSoonDialog("备份数据");
-                  },
-                ),
-                _MenuItem(
-                  icon: Icons.cloud_download,
-                  title: "恢复数据",
-                  subtitle: "从云端恢复数据",
-                  onTap: () {
-                    _showComingSoonDialog("恢复数据");
-                  },
-                ),
-                _MenuItem(
-                  icon: Icons.file_download,
-                  title: "导出数据",
-                  subtitle: "导出为CSV或JSON",
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ExportDataScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ]),
+              _buildMenuSection(
+                "数据管理",
+                [
+                  _MenuItem(
+                    icon: Icons.cloud_upload,
+                    title: "备份数据",
+                    subtitle: "将数据备份到云端",
+                    onTap: () {
+                      _showComingSoonDialog("备份数据");
+                    },
+                  ),
+                  _MenuItem(
+                    icon: Icons.cloud_download,
+                    title: "恢复数据",
+                    subtitle: "从云端恢复数据",
+                    onTap: () {
+                      _showComingSoonDialog("恢复数据");
+                    },
+                  ),
+                  _MenuItem(
+                    icon: Icons.file_download,
+                    title: "导出数据",
+                    subtitle: "导出为CSV或JSON",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ExportDataScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+                theme,
+                colorScheme,
+              ),
 
               const SizedBox(height: 16),
 
-              _buildMenuSection("应用设置", [
-                _MenuItem(
-                  icon: Icons.palette,
-                  title: "主题设置",
-                  subtitle: "自定义应用外观",
-                  onTap: () {
-                    // ✅ 跳转到主题设置页面
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ThemeSettingsScreen(),
-                      ),
-                    );
-                  },
-                ),
-                _MenuItem(
-                  icon: Icons.notifications,
-                  title: "通知设置",
-                  subtitle: "管理训练提醒",
-                  onTap: () {
-                    _showComingSoonDialog("通知设置");
-                  },
-                ),
-                _MenuItem(
-                  icon: Icons.language,
-                  title: "语言设置",
-                  subtitle: "切换应用语言",
-                  onTap: () {
-                    _showComingSoonDialog("语言设置");
-                  },
-                ),
-              ]),
+              _buildMenuSection(
+                "应用设置",
+                [
+                  _MenuItem(
+                    icon: Icons.palette,
+                    title: "主题设置",
+                    subtitle: "自定义应用外观",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ThemeSettingsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _MenuItem(
+                    icon: Icons.notifications,
+                    title: "通知设置",
+                    subtitle: "管理训练提醒",
+                    onTap: () {
+                      _showComingSoonDialog("通知设置");
+                    },
+                  ),
+                  _MenuItem(
+                    icon: Icons.language,
+                    title: "语言设置",
+                    subtitle: "切换应用语言",
+                    onTap: () {
+                      _showComingSoonDialog("语言设置");
+                    },
+                  ),
+                ],
+                theme,
+                colorScheme,
+              ),
 
               const SizedBox(height: 16),
 
-              _buildMenuSection("关于", [
-                _MenuItem(
-                  icon: Icons.info_outline,
-                  title: "关于应用",
-                  subtitle: "版本 1.0.0",
-                  onTap: () {
-                    _showAboutDialog();
-                  },
-                ),
-                _MenuItem(
-                  icon: Icons.privacy_tip_outlined,
-                  title: "隐私政策",
-                  subtitle: "查看隐私条款",
-                  onTap: () {
-                    _showComingSoonDialog("隐私政策");
-                  },
-                ),
-                _MenuItem(
-                  icon: Icons.help_outline,
-                  title: "帮助与反馈",
-                  subtitle: "获取帮助或提出建议",
-                  onTap: () {
-                    _showComingSoonDialog("帮助与反馈");
-                  },
-                ),
-              ]),
+              _buildMenuSection(
+                "关于",
+                [
+                  _MenuItem(
+                    icon: Icons.info_outline,
+                    title: "关于应用",
+                    subtitle: "版本 1.0.0",
+                    onTap: () {
+                      _showAboutDialog();
+                    },
+                  ),
+                  _MenuItem(
+                    icon: Icons.privacy_tip_outlined,
+                    title: "隐私政策",
+                    subtitle: "查看隐私条款",
+                    onTap: () {
+                      _showComingSoonDialog("隐私政策");
+                    },
+                  ),
+                  _MenuItem(
+                    icon: Icons.help_outline,
+                    title: "帮助与反馈",
+                    subtitle: "获取帮助或提出建议",
+                    onTap: () {
+                      _showComingSoonDialog("帮助与反馈");
+                    },
+                  ),
+                ],
+                theme,
+                colorScheme,
+              ),
 
               const SizedBox(height: 16),
 
-              // ✅ 开发者测试区域
-              _buildMenuSection("🚧 开发者选项", [
-                _MenuItem(
-                  icon: Icons.delete_forever,
-                  title: "删除所有数据",
-                  subtitle: "⚠️ 仅供开发测试使用",
-                  onTap: _showDeleteConfirmDialog,
-                ),
-              ]),
+              // 开发者测试区域
+              _buildMenuSection(
+                "🚧 开发者选项",
+                [
+                  _MenuItem(
+                    icon: Icons.delete_forever,
+                    title: "删除所有数据",
+                    subtitle: "⚠️ 仅供开发测试使用",
+                    onTap: _showDeleteConfirmDialog,
+                  ),
+                ],
+                theme,
+                colorScheme,
+              ),
 
-              const SizedBox(height: 20),
-
-              // 底部留白
               const SizedBox(height: 20),
             ],
           ),
@@ -286,19 +324,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildUserInfoCard() {
+  // ✅ 用户信息卡片 - 使用主题颜色
+  Widget _buildUserInfoCard(ThemeData theme, ColorScheme colorScheme) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4F75FF), Color(0xFF6B8FFF)],
+        gradient: LinearGradient(
+          colors: [
+            colorScheme.primary,      // ✅ 使用主题主色
+            colorScheme.secondary,    // ✅ 使用主题次色
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4F75FF).withOpacity(0.3),
+            color: colorScheme.primary.withOpacity(0.3),  // ✅ 使用主题主色
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -353,15 +395,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStatsCard() {
+  // ✅ 统计卡片 - 使用主题颜色
+  Widget _buildStatsCard(ThemeData theme, ColorScheme colorScheme) {
     if (_isLoading) {
       return Container(
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardColor,  // ✅ 使用主题卡片色
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Center(child: CircularProgressIndicator()),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: colorScheme.primary,  // ✅ 使用主题主色
+          ),
+        ),
       );
     }
 
@@ -376,7 +423,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardColor,  // ✅ 使用主题卡片色
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -394,20 +441,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4F75FF).withOpacity(0.1),
+                    color: colorScheme.primary.withOpacity(0.1),  // ✅ 使用主题主色
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.bar_chart,
-                    color: Color(0xFF4F75FF),
+                    color: colorScheme.primary,  // ✅ 使用主题主色
                     size: 20,
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
                     "训练统计",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: theme.textTheme.bodyLarge?.color,  // ✅ 使用主题文字色
+                    ),
                   ),
                 ),
                 Icon(
@@ -425,7 +476,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Icons.fitness_center,
                   "$_totalWorkouts",
                   "总训练次数",
-                  const Color(0xFF4F75FF),
+                  colorScheme.primary,  // ✅ 使用主题主色
                 ),
                 _buildStatItem(
                   Icons.calendar_today,
@@ -471,7 +522,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildMenuSection(String title, List<_MenuItem> items) {
+  // ✅ 菜单区域 - 使用主题颜色
+  Widget _buildMenuSection(
+    String title,
+    List<_MenuItem> items,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -482,13 +539,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
+              color: theme.textTheme.bodyLarge?.color,  // ✅ 使用主题文字色
             ),
           ),
         ),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.cardColor,  // ✅ 使用主题卡片色
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -506,9 +563,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               return Column(
                 children: [
-                  _buildMenuItem(item),
+                  _buildMenuItem(item, theme, colorScheme),
                   if (!isLast)
-                    Divider(height: 1, indent: 60, color: Colors.grey[200]),
+                    Divider(
+                      height: 1,
+                      indent: 60,
+                      color: theme.dividerColor,  // ✅ 使用主题分割线色
+                    ),
                 ],
               );
             }).toList(),
@@ -518,7 +579,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildMenuItem(_MenuItem item) {
+  // ✅ 菜单项 - 使用主题颜色
+  Widget _buildMenuItem(
+    _MenuItem item,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
     return InkWell(
       onTap: item.onTap,
       borderRadius: BorderRadius.circular(16),
@@ -529,10 +595,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF4F75FF).withOpacity(0.1),
+                color: colorScheme.primary.withOpacity(0.1),  // ✅ 使用主题主色
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(item.icon, color: const Color(0xFF4F75FF), size: 22),
+              child: Icon(
+                item.icon,
+                color: colorScheme.primary,  // ✅ 使用主题主色
+                size: 22,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -541,9 +611,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   Text(
                     item.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
+                      color: theme.textTheme.bodyLarge?.color,  // ✅ 使用主题文字色
                     ),
                   ),
                   if (item.subtitle != null) ...[

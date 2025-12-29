@@ -31,9 +31,13 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildBottomNavigationBar() {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,  // ✅ 使用主题卡片色
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -53,25 +57,29 @@ class _MainScreenState extends State<MainScreen> {
                 activeIcon: Icons.home,
                 label: '首页',
                 index: 0,
+                colorScheme: colorScheme,  // ✅ 传递配色方案
               ),
               _buildNavItem(
                 icon: Icons.fitness_center_outlined,
                 activeIcon: Icons.fitness_center,
                 label: '动作',
                 index: 1,
+                colorScheme: colorScheme,  // ✅ 传递配色方案
               ),
-              _buildCenterButton(),
+              _buildCenterButton(colorScheme),  // ✅ 传递配色方案
               _buildNavItem(
                 icon: Icons.calendar_today_outlined,
                 activeIcon: Icons.calendar_today,
                 label: '日历',
                 index: 2,
+                colorScheme: colorScheme,  // ✅ 传递配色方案
               ),
               _buildNavItem(
                 icon: Icons.person_outline,
                 activeIcon: Icons.person,
                 label: '我的',
                 index: 3,
+                colorScheme: colorScheme,  // ✅ 传递配色方案
               ),
             ],
           ),
@@ -85,6 +93,7 @@ class _MainScreenState extends State<MainScreen> {
     required IconData activeIcon,
     required String label,
     required int index,
+    required ColorScheme colorScheme,  // ✅ 接收配色方案
   }) {
     final isSelected = _currentIndex == index;
 
@@ -103,7 +112,9 @@ class _MainScreenState extends State<MainScreen> {
             children: [
               Icon(
                 isSelected ? activeIcon : icon,
-                color: isSelected ? const Color(0xFF4F75FF) : Colors.grey,
+                color: isSelected 
+                    ? colorScheme.primary  // ✅ 使用主题主色
+                    : Colors.grey,
                 size: 24,
               ),
               const SizedBox(height: 4),
@@ -111,7 +122,9 @@ class _MainScreenState extends State<MainScreen> {
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  color: isSelected ? const Color(0xFF4F75FF) : Colors.grey,
+                  color: isSelected 
+                      ? colorScheme.primary  // ✅ 使用主题主色
+                      : Colors.grey,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
@@ -122,7 +135,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildCenterButton() {
+  Widget _buildCenterButton(ColorScheme colorScheme) {  // ✅ 接收配色方案
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -132,26 +145,29 @@ class _MainScreenState extends State<MainScreen> {
           child: Container(
             height: 56,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF4F75FF), Color(0xFF6B8FFF)],
+              gradient: LinearGradient(
+                colors: [
+                  colorScheme.primary,      // ✅ 使用主题主色
+                  colorScheme.secondary,    // ✅ 使用主题次色
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF4F75FF).withOpacity(0.3),
+                  color: colorScheme.primary.withOpacity(0.3),  // ✅ 使用主题主色
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: Column(
+            child: const Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.add, color: Colors.white, size: 24),
-                const SizedBox(height: 2),
-                const Text(
+                Icon(Icons.add, color: Colors.white, size: 24),
+                SizedBox(height: 2),
+                Text(
                   "训练",
                   style: TextStyle(
                     color: Colors.white,
