@@ -22,20 +22,18 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // ✅ 添加 ref 参数
-    final theme = ref.watch(themeProvider); // ✅ 监听主题变化
+    // ✅ 监听主题状态
+    final themeState = ref.watch(themeProvider);
 
     return MaterialApp(
-      title: 'Lift',
+      title: 'Lift - 健身记录',
       debugShowCheckedModeBanner: false,
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [Locale('zh', 'CN'), Locale('en', 'US')],
-      locale: const Locale('zh', 'CN'),
-      theme: theme.toThemeData(), // ✅ 使用动态主题
+      // ✅ 设置主题模式
+      themeMode: themeState.themeMode,
+      // ✅ 亮色主题
+      theme: themeState.lightTheme.toThemeData(),
+      // ✅ 暗色主题
+      darkTheme: themeState.darkTheme.toThemeData(),
       home: const MainScreen(),
     );
   }

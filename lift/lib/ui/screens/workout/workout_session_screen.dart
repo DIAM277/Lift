@@ -75,7 +75,6 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
     if (session != null) {
       setState(() {
         _session = session;
-        // ✅ 使用session的startTime，如果是新开始的训练，startTime已经在plan_detail_screen中设置
         _startTime = session.startTime;
         _isLoading = false;
       });
@@ -131,17 +130,25 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     if (_isLoading || _session == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
-        body: const Center(child: CircularProgressIndicator()),
+        backgroundColor: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
+        body: Center(
+          child: CircularProgressIndicator(
+            color: colorScheme.primary, // ✅ 使用主题主色
+          ),
+        ),
       );
     }
 
     return Stack(
       children: [
         Scaffold(
-          backgroundColor: const Color(0xFFF5F7FA),
+          backgroundColor: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
           appBar: AppBar(
             leading: IconButton(
               icon: const Icon(Icons.close),
@@ -151,7 +158,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
               "训练进行中",
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            backgroundColor: Colors.white,
+            backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
             elevation: 0,
             actions: [
               if (_isAllCompleted())
@@ -167,7 +174,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
                 margin: const EdgeInsets.all(16),
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: theme.cardColor, // ✅ 使用主题卡片色
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -181,9 +188,10 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
                   children: [
                     Text(
                       _session!.note ?? "今日训练",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
+                        color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -194,16 +202,22 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
                           Icons.fitness_center,
                           "${_calculateTotalVolume().toInt()}",
                           "总容量(kg)",
+                          colorScheme.primary, // ✅ 使用主题主色
+                          theme,
                         ),
                         _buildStatColumn(
                           Icons.checklist,
                           _getCompletedSetsInfo(),
                           "完成组数",
+                          Colors.orange,
+                          theme,
                         ),
                         _buildStatColumn(
                           Icons.timer_outlined,
                           _getElapsedTime(),
                           "训练时长",
+                          Colors.green,
+                          theme,
                         ),
                       ],
                     ),
@@ -218,6 +232,8 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
                     return _buildExerciseCard(
                       _session!.exercises[index],
                       index,
+                      theme,
+                      colorScheme,
                     );
                   },
                 ),
@@ -252,7 +268,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
                       ),
                     ),
                   )
-                : _buildLongPressButton(), // ✅ 使用新的长按按钮
+                : _buildLongPressButton(theme), // ✅ 传递 theme
           ),
         ),
         if (_showRestTimer)
@@ -262,7 +278,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
               setState(() {
                 _showRestTimer = false;
               });
-              _showRestCompleteSnackbar();
+              _showRestCompleteSnackbar(colorScheme);
             },
           ),
       ],
@@ -270,7 +286,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
   }
 
   // ✅ 新的长按按钮实现
-  Widget _buildLongPressButton() {
+  Widget _buildLongPressButton(ThemeData theme) {
     return SizedBox(
       width: double.infinity,
       height: 56,
@@ -374,17 +390,33 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
     );
   }
 
-  Widget _buildStatColumn(IconData icon, String value, String label) {
+  Widget _buildStatColumn(
+    IconData icon,
+    String value,
+    String label,
+    Color iconColor,
+    ThemeData theme,
+  ) {
     return Column(
       children: [
-        Icon(icon, size: 24, color: const Color(0xFF4F75FF)),
+        Icon(icon, size: 24, color: iconColor),
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+          ),
         ),
         const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
+          ),
+        ),
       ],
     );
   }
@@ -401,13 +433,18 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
     }
   }
 
-  Widget _buildExerciseCard(WorkoutSessionLog exercise, int exerciseIndex) {
+  Widget _buildExerciseCard(
+    WorkoutSessionLog exercise,
+    int exerciseIndex,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
     final isCompleted = _isExerciseCompleted(exercise);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor, // ✅ 使用主题卡片色
         borderRadius: BorderRadius.circular(16),
         border: isCompleted ? Border.all(color: Colors.green, width: 2) : null,
         boxShadow: [
@@ -430,15 +467,19 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
                     children: [
                       Text(
                         exercise.exerciseName ?? "未命名动作",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         "动作 ${exerciseIndex + 1}",
-                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
+                        ),
                       ),
                     ],
                   ),
@@ -448,7 +489,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
               ],
             ),
           ),
-          Divider(height: 1, color: Colors.grey[200]),
+          Divider(height: 1, color: theme.dividerColor), // ✅ 使用主题分割线色
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
             child: Column(
@@ -461,7 +502,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
                         "组数",
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey[500],
+                          color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -472,7 +513,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey[500],
+                          color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -483,7 +524,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey[500],
+                          color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -498,6 +539,8 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
                     entry.key,
                     entry.value,
                     exerciseIndex,
+                    theme,
+                    colorScheme,
                   );
                 }),
               ],
@@ -513,6 +556,8 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
     int setIndex,
     WorkoutSet set,
     int exerciseIndex,
+    ThemeData theme,
+    ColorScheme colorScheme,
   ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
@@ -532,7 +577,9 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: set.isCompleted ? Colors.green : Colors.black87,
+                color: set.isCompleted
+                    ? Colors.green
+                    : theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
               ),
             ),
           ),
@@ -542,17 +589,20 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
-                color: set.isCompleted ? Colors.white : const Color(0xFFF5F7FA),
+                color: set.isCompleted
+                    ? theme
+                          .cardColor // ✅ 使用主题卡片色
+                    : theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
                 child: set.isCompleted
                     ? Text(
                         set.weight.toStringAsFixed(1).replaceAll(".0", ""),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
-                          color: Colors.black87,
+                          color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                         ),
                       )
                     : TextFormField(
@@ -561,9 +611,10 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
                             .replaceAll(".0", ""),
                         keyboardType: TextInputType.number,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
+                          color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                         ),
                         decoration: const InputDecoration(
                           border: InputBorder.none,
@@ -583,26 +634,30 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
-                color: set.isCompleted ? Colors.white : const Color(0xFFF5F7FA),
+                color: set.isCompleted
+                    ? theme
+                          .cardColor // ✅ 使用主题卡片色
+                    : theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
                 child: set.isCompleted
                     ? Text(
                         set.reps.toString(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
-                          color: Colors.black87,
+                          color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                         ),
                       )
                     : TextFormField(
                         initialValue: set.reps.toString(),
                         keyboardType: TextInputType.number,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
+                          color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                         ),
                         decoration: const InputDecoration(
                           border: InputBorder.none,
@@ -629,7 +684,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
                 : ElevatedButton(
                     onPressed: () => _completeSet(exercise, setIndex),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4F75FF),
+                      backgroundColor: colorScheme.primary, // ✅ 使用主题主色
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -672,30 +727,45 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
     }
   }
 
-  void _showRestCompleteSnackbar() {
+  void _showRestCompleteSnackbar(ColorScheme colorScheme) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('休息结束，继续加油！'),
-        backgroundColor: Color(0xFF4F75FF),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: const Text('休息结束，继续加油！'),
+        backgroundColor: colorScheme.primary, // ✅ 使用主题主色
+        duration: const Duration(seconds: 2),
       ),
     );
   }
 
   void _showExitConfirmation() {
+    // ✅ 获取主题
+    final theme = Theme.of(context);
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text(
+        backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
+        title: Text(
           "确认退出",
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+          ),
         ),
-        content: const Text("训练还未完成，确定要退出吗？进度将不会保存。"),
+        content: Text(
+          "训练还未完成，确定要退出吗？进度将不会保存。",
+          style: TextStyle(
+            color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
+          ),
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text("继续训练"),
+            child: Text(
+              "继续训练",
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -711,19 +781,34 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
   }
 
   void _showForceEndDialog() {
+    // ✅ 获取主题
+    final theme = Theme.of(context);
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text(
+        backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
+        title: Text(
           "提前结束训练",
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+          ),
         ),
-        content: const Text("确定要结束训练吗？已完成的组将被保存为训练记录。"),
+        content: Text(
+          "确定要结束训练吗？已完成的组将被保存为训练记录。",
+          style: TextStyle(
+            color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
+          ),
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text("继续训练"),
+            child: Text(
+              "继续训练",
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -740,7 +825,6 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
 
   void _completeWorkout() async {
     final endTime = DateTime.now();
-    // ✅ 使用_startTime计算实际训练时长
     final duration = endTime.difference(_startTime!).inMinutes;
 
     setState(() {
@@ -761,10 +845,15 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
   }
 
   void _showCompletionDialog() {
+    // ✅ 获取主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
+        backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -782,21 +871,27 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               "训练完成！",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+              ),
             ),
             const SizedBox(height: 16),
             _buildSummaryRow(
               Icons.fitness_center,
               "总容量",
               "${_session!.totalVolume.toInt()}kg",
+              theme,
             ),
             const SizedBox(height: 8),
             _buildSummaryRow(
               Icons.timer_outlined,
               "训练时长",
               "${_session!.duration}分钟",
+              theme,
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -807,7 +902,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
                   Navigator.pop(context, true);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4F75FF),
+                  backgroundColor: colorScheme.primary, // ✅ 使用主题主色
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -829,19 +924,35 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen>
     );
   }
 
-  Widget _buildSummaryRow(IconData icon, String label, String value) {
+  Widget _buildSummaryRow(
+    IconData icon,
+    String label,
+    String value,
+    ThemeData theme,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(icon, size: 20, color: Colors.grey[600]),
+        Icon(
+          icon,
+          size: 20,
+          color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
+        ),
         const SizedBox(width: 8),
         Text(
           "$label: ",
-          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+          style: TextStyle(
+            fontSize: 16,
+            color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
+          ),
         ),
         Text(
           value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+          ),
         ),
       ],
     );

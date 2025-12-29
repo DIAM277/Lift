@@ -70,46 +70,55 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 获取当前主题
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
         appBar: AppBar(
           title: const Text(
             "训练统计",
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          backgroundColor: Colors.white,
+          backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
           elevation: 0,
         ),
-        body: const Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: CircularProgressIndicator(
+            color: colorScheme.primary, // ✅ 使用主题主色
+          ),
+        ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor, // ✅ 使用主题背景色
       appBar: AppBar(
         title: const Text(
           "训练统计",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: theme.cardColor, // ✅ 使用主题卡片色
         elevation: 0,
       ),
       body: RefreshIndicator(
         onRefresh: _loadData,
+        color: colorScheme.primary, // ✅ 使用主题主色
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             // 1. 核心累计数据
-            _buildOverviewSection(),
+            _buildOverviewSection(colorScheme),
             const SizedBox(height: 24),
 
             // 2. 趋势类数据
-            _buildTrendSection(),
+            _buildTrendSection(theme, colorScheme),
             const SizedBox(height: 24),
 
             // 3. 维度拆解数据
-            _buildDimensionSection(),
+            _buildDimensionSection(theme, colorScheme),
             const SizedBox(height: 24),
           ],
         ),
@@ -118,7 +127,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   // ==================== 1. 核心累计数据 ====================
-  Widget _buildOverviewSection() {
+  Widget _buildOverviewSection(ColorScheme colorScheme) {
     final totalDays = StatisticsService.calculateTotalDays(_allSessions);
     final totalVolume = StatisticsService.calculateTotalVolume(_allSessions);
     final totalDuration = StatisticsService.calculateTotalDuration(
@@ -131,15 +140,15 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4F75FF), Color(0xFF6B8FFF)],
+        gradient: LinearGradient(
+          colors: [colorScheme.primary, colorScheme.secondary], // ✅ 使用主题颜色
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4F75FF).withOpacity(0.3),
+            color: colorScheme.primary.withOpacity(0.3), // ✅ 使用主题主色
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -249,34 +258,49 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   // ==================== 2. 趋势类数据 ====================
-  Widget _buildTrendSection() {
+  Widget _buildTrendSection(ThemeData theme, ColorScheme colorScheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               "趋势分析",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+              ),
             ),
             // 周期选择器
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: theme.cardColor, // ✅ 使用主题卡片色
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.grey[300]!),
+                border: Border.all(color: theme.dividerColor), // ✅ 使用主题分割线色
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _trendPeriod,
                   isDense: true,
-                  icon: const Icon(Icons.arrow_drop_down, size: 20),
+                  icon: Icon(
+                    Icons.arrow_drop_down,
+                    size: 20,
+                    color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+                  ),
+                  dropdownColor: theme.cardColor, // ✅ 下拉菜单背景色
                   items: ['近30天', '3个月', '6个月'].map((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
-                      child: Text(value, style: const TextStyle(fontSize: 13)),
+                      child: Text(
+                        value,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+                        ),
+                      ),
                     );
                   }).toList(),
                   onChanged: (String? newValue) {
@@ -294,20 +318,20 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         const SizedBox(height: 16),
 
         // 月训练次数趋势
-        _buildWorkoutTrendChart(),
+        _buildWorkoutTrendChart(theme, colorScheme),
         const SizedBox(height: 16),
 
         // 月度训练容量趋势
-        _buildVolumeTrendChart(),
+        _buildVolumeTrendChart(theme),
         const SizedBox(height: 16),
 
         // 周训练频率分布
-        _buildWeeklyFrequencyChart(),
+        _buildWeeklyFrequencyChart(theme),
       ],
     );
   }
 
-  Widget _buildWorkoutTrendChart() {
+  Widget _buildWorkoutTrendChart(ThemeData theme, ColorScheme colorScheme) {
     final filteredSessions = _getFilteredSessions();
     final trendData = StatisticsService.getMonthlyWorkoutTrend(
       filteredSessions,
@@ -317,7 +341,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     return _buildChartCard(
       title: "月训练次数",
       icon: Icons.show_chart,
-      color: const Color(0xFF4F75FF),
+      color: colorScheme.primary, // ✅ 使用主题主色
+      theme: theme,
       child: SizedBox(
         height: 200,
         child: Padding(
@@ -329,7 +354,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 drawVerticalLine: false,
                 horizontalInterval: 2,
                 getDrawingHorizontalLine: (value) {
-                  return FlLine(color: Colors.grey[200]!, strokeWidth: 1);
+                  return FlLine(
+                    color: theme.dividerColor, // ✅ 使用主题分割线色
+                    strokeWidth: 1,
+                  );
                 },
               ),
               titlesData: FlTitlesData(
@@ -341,7 +369,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     getTitlesWidget: (value, meta) {
                       return Text(
                         value.toInt().toString(),
-                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
+                        ),
                       );
                     },
                   ),
@@ -367,7 +398,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                             '${month}月',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey[600],
+                              color: theme
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.color, // ✅ 使用主题文字色
                             ),
                           ),
                         );
@@ -385,22 +419,22 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     return FlSpot(index.toDouble(), e.value.toDouble());
                   }).toList(),
                   isCurved: true,
-                  color: const Color(0xFF4F75FF),
+                  color: colorScheme.primary, // ✅ 使用主题主色
                   barWidth: 3,
                   dotData: FlDotData(
                     show: true,
                     getDotPainter: (spot, percent, barData, index) {
                       return FlDotCirclePainter(
                         radius: 4,
-                        color: Colors.white,
+                        color: theme.cardColor, // ✅ 使用主题卡片色
                         strokeWidth: 2,
-                        strokeColor: const Color(0xFF4F75FF),
+                        strokeColor: colorScheme.primary, // ✅ 使用主题主色
                       );
                     },
                   ),
                   belowBarData: BarAreaData(
                     show: true,
-                    color: const Color(0xFF4F75FF).withOpacity(0.1),
+                    color: colorScheme.primary.withOpacity(0.1), // ✅ 使用主题主色
                   ),
                 ),
               ],
@@ -411,7 +445,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  Widget _buildVolumeTrendChart() {
+  Widget _buildVolumeTrendChart(ThemeData theme) {
     final filteredSessions = _getFilteredSessions();
     final volumeData = StatisticsService.getMonthlyVolumeTrend(
       filteredSessions,
@@ -422,6 +456,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       title: "月度训练容量",
       icon: Icons.bar_chart,
       color: Colors.green,
+      theme: theme,
       child: SizedBox(
         height: 200,
         child: Padding(
@@ -429,7 +464,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
           child: BarChart(
             BarChartData(
               alignment: BarChartAlignment.spaceAround,
-              maxY: volumeData.values.reduce((a, b) => a > b ? a : b) * 1.2,
+              maxY: volumeData.values.isEmpty
+                  ? 1
+                  : volumeData.values.reduce((a, b) => a > b ? a : b) * 1.2,
               barTouchData: BarTouchData(enabled: false),
               titlesData: FlTitlesData(
                 leftTitles: AxisTitles(
@@ -439,7 +476,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     getTitlesWidget: (value, meta) {
                       return Text(
                         '${(value / 1000).toStringAsFixed(0)}t',
-                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
+                        ),
                       );
                     },
                   ),
@@ -464,7 +504,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                             '${month}月',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey[600],
+                              color: theme
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.color, // ✅ 使用主题文字色
                             ),
                           ),
                         );
@@ -477,10 +520,14 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               gridData: FlGridData(
                 show: true,
                 drawVerticalLine: false,
-                horizontalInterval:
-                    volumeData.values.reduce((a, b) => a > b ? a : b) / 4,
+                horizontalInterval: volumeData.values.isEmpty
+                    ? 1
+                    : volumeData.values.reduce((a, b) => a > b ? a : b) / 4,
                 getDrawingHorizontalLine: (value) {
-                  return FlLine(color: Colors.grey[200]!, strokeWidth: 1);
+                  return FlLine(
+                    color: theme.dividerColor, // ✅ 使用主题分割线色
+                    strokeWidth: 1,
+                  );
                 },
               ),
               borderData: FlBorderData(show: false),
@@ -508,7 +555,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  Widget _buildWeeklyFrequencyChart() {
+  Widget _buildWeeklyFrequencyChart(ThemeData theme) {
     final weekData = StatisticsService.getWeeklyFrequency(_recentSessions);
     final total = weekData.values.fold<int>(0, (sum, count) => sum + count);
 
@@ -517,11 +564,11 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       subtitle: "最近一周",
       icon: Icons.pie_chart,
       color: Colors.orange,
+      theme: theme,
       child: SizedBox(
-        height: 200, // ✅ 减小高度
+        height: 200,
         child: Row(
           children: [
-            // ✅ 饼图区域
             Expanded(
               flex: 2,
               child: Padding(
@@ -529,7 +576,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 child: PieChart(
                   PieChartData(
                     sectionsSpace: 2,
-                    centerSpaceRadius: 35, // ✅ 减小中心空白
+                    centerSpaceRadius: 35,
                     sections: weekData.entries.map((e) {
                       final percentage = total > 0
                           ? (e.value / total * 100)
@@ -550,7 +597,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                         title: e.value > 0
                             ? '${percentage.toStringAsFixed(0)}%'
                             : '',
-                        radius: 50, // ✅ 减小半径
+                        radius: 50,
                         titleStyle: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -563,9 +610,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 ),
               ),
             ),
-            // ✅ 增加间距
             const SizedBox(width: 16),
-            // ✅ 图例区域
             Expanded(
               flex: 2,
               child: Column(
@@ -600,7 +645,14 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                         Flexible(
                           child: Text(
                             '${e.key}: ${e.value}次',
-                            style: const TextStyle(fontSize: 11, height: 1.2),
+                            style: TextStyle(
+                              fontSize: 11,
+                              height: 1.2,
+                              color: theme
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.color, // ✅ 使用主题文字色
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -610,7 +662,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 }).toList(),
               ),
             ),
-            // ✅ 右侧留白
             const SizedBox(width: 8),
           ],
         ),
@@ -619,27 +670,31 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   // ==================== 3. 维度拆解数据 ====================
-  Widget _buildDimensionSection() {
+  Widget _buildDimensionSection(ThemeData theme, ColorScheme colorScheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           "训练结构",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
+          ),
         ),
         const SizedBox(height: 16),
 
         // 各部位训练占比
-        _buildMuscleGroupChart(),
+        _buildMuscleGroupChart(theme, colorScheme),
         const SizedBox(height: 16),
 
         // 动作使用频率 Top 5
-        _buildTopExercises(),
+        _buildTopExercises(theme),
       ],
     );
   }
 
-  Widget _buildMuscleGroupChart() {
+  Widget _buildMuscleGroupChart(ThemeData theme, ColorScheme colorScheme) {
     final distribution = StatisticsService.getMuscleGroupDistribution(
       _recentSessions,
     );
@@ -650,11 +705,17 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         title: "各部位训练占比",
         subtitle: "最近三个月",
         icon: Icons.fitness_center,
-        color: const Color(0xFF4F75FF),
-        child: const Center(
+        color: colorScheme.primary, // ✅ 使用主题主色
+        theme: theme,
+        child: Center(
           child: Padding(
-            padding: EdgeInsets.all(40),
-            child: Text("暂无数据", style: TextStyle(color: Colors.grey)),
+            padding: const EdgeInsets.all(40),
+            child: Text(
+              "暂无数据",
+              style: TextStyle(
+                color: theme.textTheme.bodyMedium?.color,
+              ), // ✅ 使用主题文字色
+            ),
           ),
         ),
       );
@@ -664,12 +725,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       title: "各部位训练占比",
       subtitle: "最近三个月",
       icon: Icons.fitness_center,
-      color: const Color(0xFF4F75FF),
+      color: colorScheme.primary, // ✅ 使用主题主色
+      theme: theme,
       child: SizedBox(
-        height: 240, // ✅ 减小高度
+        height: 240,
         child: Row(
           children: [
-            // ✅ 饼图区域
             Expanded(
               flex: 5,
               child: Padding(
@@ -677,7 +738,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 child: PieChart(
                   PieChartData(
                     sectionsSpace: 2,
-                    centerSpaceRadius: 45, // ✅ 调整中心空白
+                    centerSpaceRadius: 45,
                     sections: distribution.entries.map((e) {
                       final percentage = (e.value / total * 100);
                       final muscleGroup = MuscleGroupService.getMuscleGroup(
@@ -689,7 +750,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                         title: percentage >= 5
                             ? '${percentage.toStringAsFixed(0)}%'
                             : '',
-                        radius: 55, // ✅ 调整半径
+                        radius: 55,
                         titleStyle: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -702,9 +763,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 ),
               ),
             ),
-            // ✅ 增加间距
             const SizedBox(width: 12),
-            // ✅ 图例区域
             Expanded(
               flex: 4,
               child: SingleChildScrollView(
@@ -739,10 +798,14 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                               children: [
                                 Text(
                                   muscleGroup.name,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                     height: 1.2,
+                                    color: theme
+                                        .textTheme
+                                        .bodyLarge
+                                        ?.color, // ✅ 使用主题文字色
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -750,7 +813,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                   '$percentage% (${e.value}次)',
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: Colors.grey[600],
+                                    color: theme
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.color, // ✅ 使用主题文字色
                                     height: 1.2,
                                   ),
                                   overflow: TextOverflow.ellipsis,
@@ -765,7 +831,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 ),
               ),
             ),
-            // ✅ 右侧留白
             const SizedBox(width: 8),
           ],
         ),
@@ -773,7 +838,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  Widget _buildTopExercises() {
+  Widget _buildTopExercises(ThemeData theme) {
     final topExercises = StatisticsService.getTopExercises(_recentSessions, 5);
 
     if (topExercises.isEmpty) {
@@ -782,10 +847,16 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         subtitle: "最近三个月",
         icon: Icons.format_list_numbered,
         color: Colors.purple,
-        child: const Center(
+        theme: theme,
+        child: Center(
           child: Padding(
-            padding: EdgeInsets.all(40),
-            child: Text("暂无数据", style: TextStyle(color: Colors.grey)),
+            padding: const EdgeInsets.all(40),
+            child: Text(
+              "暂无数据",
+              style: TextStyle(
+                color: theme.textTheme.bodyMedium?.color,
+              ), // ✅ 使用主题文字色
+            ),
           ),
         ),
       );
@@ -798,6 +869,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       subtitle: "最近三个月",
       icon: Icons.format_list_numbered,
       color: Colors.purple,
+      theme: theme,
       child: Column(
         children: topExercises.asMap().entries.map((entry) {
           final index = entry.key;
@@ -832,9 +904,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     Expanded(
                       child: Text(
                         exercise.key,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
+                          color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                         ),
                       ),
                     ),
@@ -842,7 +915,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                       '${exercise.value}次',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey[600],
+                        color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -853,7 +926,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: percentage,
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: theme.dividerColor, // ✅ 使用主题分割线色
                     valueColor: const AlwaysStoppedAnimation<Color>(
                       Colors.purple,
                     ),
@@ -873,12 +946,13 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     String? subtitle,
     required IconData icon,
     required Color color,
+    required ThemeData theme, // ✅ 添加 theme 参数
     required Widget child,
   }) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor, // ✅ 使用主题卡片色
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -908,16 +982,20 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: theme.textTheme.bodyLarge?.color, // ✅ 使用主题文字色
                       ),
                     ),
                     if (subtitle != null) ...[
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.textTheme.bodyMedium?.color, // ✅ 使用主题文字色
+                        ),
                       ),
                     ],
                   ],
